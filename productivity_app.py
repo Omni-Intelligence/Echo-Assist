@@ -6,12 +6,14 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                            QHBoxLayout, QLabel, QFrame, QComboBox, QMessageBox,
                            QPushButton, QSlider, QStackedWidget)
 from PyQt6.QtCore import Qt, QSize, QPoint
+from PyQt6.QtGui import QScreen
 
 # Import our modules
 from modules.style_config import ThemeConfig
 from modules.custom_title_bar import CustomTitleBar
 from modules.voice_typer import VoiceTyperWidget
 from modules.avatar_chat import AvatarChatWidget
+from modules.screenshot import ScreenshotWidget
 from avatars.avatar_configs import AVATARS
 
 class ProductivityApp(QMainWindow):
@@ -25,8 +27,11 @@ class ProductivityApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('AI Assistant')
+        self.setWindowTitle('Echo Assist')
         self.resize(self.current_size)
+        
+        # Position window in the top-left corner
+        self.move(0, 0)
         
         # Create main widget and layout
         central_widget = QWidget()
@@ -36,7 +41,7 @@ class ProductivityApp(QMainWindow):
         main_layout.setSpacing(0)
         
         # Add custom title bar
-        self.title_bar = CustomTitleBar(self)
+        self.title_bar = CustomTitleBar(self, "🎯 Echo Assist")
         main_layout.addWidget(self.title_bar)
         
         # Create content container
@@ -60,133 +65,57 @@ class ProductivityApp(QMainWindow):
         self.update_styles()
 
     def create_sidebar(self):
+        """Create the sidebar with navigation buttons"""
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setMaximumWidth(self.theme.sizes["sidebar"])
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(4, 4, 4, 4)
+        sidebar_layout.setSpacing(4)
         
-        layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
+        # Create navigation buttons
+        nav_buttons = [
+            ("💬 Chat Assistant", 0),
+            ("⌨️ Voice Typer", 1),
+            ("📸 Screenshot Analysis", 2),  # New button for screenshot analysis
+            ("⚙️ Settings", 3)
+        ]
         
-        # Mode buttons container
-        modes_frame = QFrame()
-        modes_frame.setObjectName("modes-frame")
-        modes_layout = QVBoxLayout(modes_frame)
-        modes_layout.setContentsMargins(0, 0, 0, 0)
-        modes_layout.setSpacing(4)
-        
-        # Create mode buttons
-        self.avatar_chat_btn = QPushButton("💬 Avatar Chat")
-        self.voice_typing_btn = QPushButton("🎤 Voice Typing")
-        
-        # Set object names for styling
-        self.avatar_chat_btn.setObjectName("mode-btn")
-        self.voice_typing_btn.setObjectName("mode-btn")
-        
-        # Connect mode buttons
-        self.avatar_chat_btn.clicked.connect(lambda: self.change_mode("Avatar Chat"))
-        self.voice_typing_btn.clicked.connect(lambda: self.change_mode("Voice Typing"))
-        
-        # Add mode buttons to layout
-        modes_layout.addWidget(self.avatar_chat_btn)
-        modes_layout.addWidget(self.voice_typing_btn)
-        
-        # Avatar selection (initially hidden)
-        self.avatar_label = QLabel("Avatar")
-        self.avatar_combo = QComboBox()
-        self.avatar_combo.addItems(list(AVATARS.keys()))
-        self.avatar_combo.currentTextChanged.connect(self.change_avatar)  # Connect the change event
-        self.avatar_label.hide()
-        self.avatar_combo.hide()
-        
-        # Settings button and stacked widget
-        settings_btn = QPushButton("⚙ Settings")
-        settings_btn.setObjectName("settings-btn")
-        settings_btn.clicked.connect(self.toggle_settings)
-        
-        # Create stacked widget for settings
-        self.settings_stack = QStackedWidget()
-        self.settings_stack.setObjectName("settings-panel")
-        
-        # Create settings panel
-        settings_panel = QWidget()
-        settings_layout = QVBoxLayout(settings_panel)
-        settings_layout.setContentsMargins(0, 0, 0, 0)
-        settings_layout.setSpacing(8)
-        
-        # Theme selection
-        theme_label = QLabel("Theme")
-        self.theme_combo = QComboBox()
-        self.theme_combo.addItems(list(self.theme.themes.keys()))
-        self.theme_combo.currentTextChanged.connect(self.change_theme)
-        
-        # Window size slider
-        size_label = QLabel("Window Size")
-        size_slider = QSlider(Qt.Orientation.Horizontal)
-        size_slider.setMinimum(300)
-        size_slider.setMaximum(800)
-        size_slider.setValue(self.width())
-        size_slider.valueChanged.connect(self.resize_window)
-        
-        # Add settings controls
-        for widget in [theme_label, self.theme_combo,
-                      size_label, size_slider]:
-            settings_layout.addWidget(widget)
-        
-        # Add reset button
-        reset_button = QPushButton("Reset to Defaults")
-        reset_button.clicked.connect(self.reset_to_defaults)
-        settings_layout.addWidget(reset_button)
-        settings_layout.addStretch()
-        
-        # Add panels to stacked widget
-        self.settings_stack.addWidget(settings_panel)
-        self.settings_stack.addWidget(QWidget())  # Empty widget for collapsed state
-        self.settings_stack.setCurrentIndex(1)  # Start with settings collapsed
-        
-        # Add everything to main layout
-        layout.addWidget(modes_frame)
-        layout.addWidget(self.avatar_label)
-        layout.addWidget(self.avatar_combo)
-        layout.addSpacing(8)
-        layout.addWidget(settings_btn)
-        layout.addWidget(self.settings_stack)
-        layout.addStretch()
-        
+        for text, index in nav_buttons:
+            btn = QPushButton(text)
+            btn.setCheckable(True)
+            btn.setFont(self.theme.SMALL_FONT)
+            btn.clicked.connect(lambda checked, i=index: self.switch_page(i))
+            sidebar_layout.addWidget(btn)
+            
+        sidebar_layout.addStretch()
         return sidebar
 
     def create_content_area(self):
+        """Create the main content area with stacked widgets"""
         content_frame = QFrame()
         content_frame.setObjectName("content")
         content_layout = QVBoxLayout(content_frame)
-        content_layout.setContentsMargins(20, 20, 20, 20)
-        content_layout.setSpacing(20)
-
-        # Initialize widgets
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create stacked widget to hold different pages
+        self.stack = QStackedWidget()
+        
+        # Create and add pages
         self.avatar_chat = AvatarChatWidget(self.theme, AVATARS)
         self.voice_typer = VoiceTyperWidget(self.theme)
+        self.screenshot_widget = ScreenshotWidget(self.theme)  # New screenshot widget
+        self.settings_widget = self.create_settings_widget()  # Add settings widget back
         
-        # Add widgets to content area
-        content_layout.addWidget(self.avatar_chat)
-        content_layout.addWidget(self.voice_typer)
+        self.stack.addWidget(self.avatar_chat)
+        self.stack.addWidget(self.voice_typer)
+        self.stack.addWidget(self.screenshot_widget)  # Add screenshot widget to stack
+        self.stack.addWidget(self.settings_widget)  # Add settings widget to stack
         
-        # Set initial state
-        self.voice_typer.hide()
-        self.avatar_chat.set_avatar(self.avatar_combo.currentText())
-
+        content_layout.addWidget(self.stack)
         return content_frame
 
-    def change_mode(self, mode):
-        if mode == 'Avatar Chat':
-            self.avatar_chat.show()
-            self.voice_typer.hide()
-            self.avatar_label.show()
-            self.avatar_combo.show()
-        else:
-            self.avatar_chat.hide()
-            self.voice_typer.show()
-            self.avatar_label.hide()
-            self.avatar_combo.hide()
+    def switch_page(self, index):
+        self.stack.setCurrentIndex(index)
 
     def change_avatar(self, avatar_name):
         """Update the current avatar and its voice"""
@@ -304,6 +233,54 @@ class ProductivityApp(QMainWindow):
                 border: none;
             }}
         """)
+
+    def create_settings_widget(self):
+        """Create the settings panel with window size and theme controls"""
+        settings_widget = QWidget()
+        settings_layout = QVBoxLayout(settings_widget)
+        settings_layout.setContentsMargins(12, 12, 12, 12)
+        settings_layout.setSpacing(8)
+
+        # Window size control
+        size_label = QLabel("Window Size")
+        size_label.setFont(self.theme.SMALL_FONT)
+        settings_layout.addWidget(size_label)
+
+        size_slider = QSlider(Qt.Orientation.Horizontal)
+        size_slider.setMinimum(300)
+        size_slider.setMaximum(800)
+        size_slider.setValue(self.width())
+        size_slider.valueChanged.connect(self.resize_window)
+        settings_layout.addWidget(size_slider)
+
+        # Theme selection
+        theme_label = QLabel("Theme")
+        theme_label.setFont(self.theme.SMALL_FONT)
+        settings_layout.addWidget(theme_label)
+
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(["Light", "Dark"])
+        self.theme_combo.setCurrentText("Dark")
+        self.theme_combo.currentTextChanged.connect(self.change_theme)
+        self.theme_combo.setFont(self.theme.SMALL_FONT)
+        settings_layout.addWidget(self.theme_combo)
+
+        # Avatar selection
+        avatar_label = QLabel("Chat Assistant")
+        avatar_label.setFont(self.theme.SMALL_FONT)
+        settings_layout.addWidget(avatar_label)
+
+        avatar_combo = QComboBox()
+        avatar_combo.addItems(['Joe', 'Ashley', 'Brian'])  # Explicitly list the avatars in order
+        avatar_combo.setCurrentText('Joe')  # Set default to Joe
+        avatar_combo.currentTextChanged.connect(self.change_avatar)
+        avatar_combo.setFont(self.theme.SMALL_FONT)
+        settings_layout.addWidget(avatar_combo)
+
+        # Add stretch to push everything to the top
+        settings_layout.addStretch()
+
+        return settings_widget
 
 def exception_hook(exctype, value, tb):
     """Global exception handler to prevent app from crashing silently"""

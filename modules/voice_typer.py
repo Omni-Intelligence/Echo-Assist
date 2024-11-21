@@ -5,7 +5,7 @@ import keyboard
 import faster_whisper
 import torch.cuda
 from threading import Thread, Event
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QTextEdit, QFrame
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QTextEdit, QFrame, QCheckBox
 from PyQt6.QtCore import pyqtSignal, QThread, Qt
 
 class VoiceTyperThread(QThread):
@@ -155,6 +155,7 @@ class VoiceTyperWidget(QWidget):
         self.recorder_thread = None
         self.is_recording = False
         self.max_level_width = 200
+        self.auto_enter = False  # New setting for auto-enter feature
         self.initUI()
         
         # Initialize keyboard hook with better event handling
@@ -248,6 +249,27 @@ class VoiceTyperWidget(QWidget):
         
         layout.addWidget(level_container)
 
+        # Auto-enter checkbox
+        self.auto_enter_checkbox = QCheckBox("Auto-press Enter")
+        self.auto_enter_checkbox.setFont(self.theme.SMALL_FONT)
+        self.auto_enter_checkbox.setStyleSheet(f"""
+            QCheckBox {{
+                color: {self.theme.get_color('text')};
+                padding: 4px;
+            }}
+            QCheckBox::indicator {{
+                width: 16px;
+                height: 16px;
+                border: 1px solid {self.theme.get_color('border')};
+                border-radius: 4px;
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {self.theme.get_color('accent')};
+            }}
+        """)
+        self.auto_enter_checkbox.stateChanged.connect(self.toggle_auto_enter)
+        layout.addWidget(self.auto_enter_checkbox)
+
         # Text display
         self.text_display = QTextEdit()
         self.text_display.setReadOnly(True)
@@ -337,6 +359,10 @@ class VoiceTyperWidget(QWidget):
             }}
         """)
 
+    def toggle_auto_enter(self, state):
+        """Toggle the auto-enter feature"""
+        self.auto_enter = bool(state)
+
     def handle_hotkey(self, event):
         """Handle Ctrl+Space hotkey with better event processing"""
         if not self.isVisible():
@@ -383,10 +409,12 @@ class VoiceTyperWidget(QWidget):
         # Preview the text first
         self.text_display.setPlainText(text)
         print(f"Received transcribed text: {text}")
-        # Write the text with proper spacing
+        
+        # Write the text without adding extra spaces
         if text:
-            # Add a space before typing if we're not at the start of a line
-            keyboard.write(" " + text if not keyboard.is_pressed('shift') else text)
+            keyboard.write(text)
+            if self.auto_enter:
+                keyboard.press_and_release('enter')
         
         # Reset the UI
         self.status_label.setText('Ready')
