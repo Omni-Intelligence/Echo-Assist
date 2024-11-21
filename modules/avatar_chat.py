@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTextEdit, QFrame
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 import speech_recognition as sr
 import numpy as np
+import pyaudio
 import collections
 import faster_whisper
 import torch.cuda
@@ -33,15 +34,88 @@ class AudioRecorderThread(QThread):
         super().__init__()
         self._recording = False
         self.audio = None
+        self.silence_threshold = 800  # Reduced from 1000 to 800
+        self.silence_duration = 1.0   # Reduced from 1.5 to 1.0 seconds
+        self.chunk_size = 1024
+        self.sample_format = pyaudio.paInt16
+        self.channels = 1
+        self.sample_rate = 44100
+        self.min_phrase_time = 0.5    # Reduced from 1.0 to 0.5 seconds
+
+    def is_silent(self, audio_data):
+        rms = np.sqrt(np.mean(np.array(audio_data) ** 2))
+        print(f"Current RMS: {rms}")  # Debug output
+        return rms < self.silence_threshold
 
     def run(self):
         try:
-            r = sr.Recognizer()
-            with sr.Microphone() as source:
-                print("Recording...")
-                self.audio = r.listen(source)
-                print("Recording finished.")
+            import time
+            import wave
+            import io
 
+            p = pyaudio.PyAudio()
+            stream = p.open(format=self.sample_format,
+                          channels=self.channels,
+                          rate=self.sample_rate,
+                          input=True,
+                          frames_per_buffer=self.chunk_size)
+
+            print("Recording...")
+            frames = []
+            self._recording = True
+            last_sound_time = time.time()
+            start_time = time.time()
+            silence_start = None
+
+            while self._recording:
+                data = stream.read(self.chunk_size, exception_on_overflow=False)
+                frames.append(data)
+                current_time = time.time()
+                
+                # Don't check for silence during the minimum phrase time
+                if current_time - start_time < self.min_phrase_time:
+                    continue
+
+                # Check for silence
+                audio_data = np.frombuffer(data, dtype=np.int16)
+                if self.is_silent(audio_data):
+                    if silence_start is None:
+                        silence_start = current_time
+                    elif current_time - silence_start > self.silence_duration:
+                        print(f"Silence detected for {current_time - silence_start:.2f} seconds, stopping recording")
+                        break
+                else:
+                    silence_start = None
+                    last_sound_time = current_time
+
+            total_duration = time.time() - start_time
+            print(f"Recording finished. Total duration: {total_duration:.2f} seconds")
+            
+            # Stop and close the stream
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+
+            # Only process if we have enough audio
+            if total_duration < 0.5:  # Ignore very short recordings
+                self.error_occurred.emit("Recording too short, please try again")
+                return
+
+            # Convert frames to AudioData format
+            wav_buffer = io.BytesIO()
+            with wave.open(wav_buffer, 'wb') as wf:
+                wf.setnchannels(self.channels)
+                wf.setsampwidth(p.get_sample_size(self.sample_format))
+                wf.setframerate(self.sample_rate)
+                wf.writeframes(b''.join(frames))
+
+            wav_buffer.seek(0)
+            self.audio = sr.AudioData(wav_buffer.read(),
+                                    self.sample_rate,
+                                    p.get_sample_size(self.sample_format))
+
+            # Convert to text
+            r = sr.Recognizer()
             try:
                 text = r.recognize_google(self.audio)
                 print("Recognized text:", text)
@@ -50,6 +124,7 @@ class AudioRecorderThread(QThread):
                 self.error_occurred.emit("Could not understand audio")
             except sr.RequestError as e:
                 self.error_occurred.emit(f"Could not request results; {str(e)}")
+
         except Exception as e:
             error_msg = f"Error in audio recording: {str(e)}\n{traceback.format_exc()}"
             print(error_msg)
