@@ -1,8 +1,7 @@
 import os
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTextEdit, QFrame, QLabel, QHBoxLayout
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-import pyaudio
-import wave
+import speech_recognition as sr
 import numpy as np
 import collections
 import faster_whisper
@@ -26,124 +25,38 @@ elevenlabs_client = ElevenLabs(api_key=os.getenv('ELEVENLABS_API_KEY'))
 # Initialize Whisper model
 model = faster_whisper.WhisperModel(model_size_or_path="tiny.en", device='cuda' if torch.cuda.is_available() else 'cpu')
 
-def get_levels(data, long_term_noise_level, current_noise_level):
-    """Calculate audio levels from raw audio data"""
-    # Calculate RMS of the audio data
-    pegel = np.sqrt(np.mean(data**2)) * 1000  # Increased scaling factor
-
-    # Initialize noise levels if empty
-    if not long_term_noise_level:
-        long_term_noise_level.append(pegel)
-    if not current_noise_level:
-        current_noise_level.append(pegel)
-
-    # Update noise levels with slower adaptation
-    long_term_noise_level.append(pegel * 0.001 + long_term_noise_level[-1] * 0.999)
-    current_noise_level.append(pegel * 0.05 + current_noise_level[-1] * 0.95)
-
-    return pegel, long_term_noise_level, current_noise_level
-
 class AudioRecorderThread(QThread):
-    finished = pyqtSignal(str)
-    audio_level = pyqtSignal(float)
+    recording_finished = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        self._recording = False
+        self.audio = None
 
     def run(self):
         try:
-            p = pyaudio.PyAudio()
-            stream = p.open(format=pyaudio.paInt16,
-                          channels=1,
-                          rate=16000,
-                          input=True,
-                          frames_per_buffer=1024)
+            r = sr.Recognizer()
+            with sr.Microphone() as source:
+                print("Recording...")
+                self.audio = r.listen(source)
+                print("Recording finished.")
 
-            frames = []
-            silence_counter = 0
-            voice_started = False
-            long_term_noise_level = collections.deque(maxlen=50)
-            current_noise_level = collections.deque(maxlen=5)
-
-            print("Starting audio recording...")
-
-            # Record for at least 0.5 second to establish baseline
-            for _ in range(8):  # 8 * 1024/16000 = ~0.5 second
-                data = np.frombuffer(stream.read(1024, exception_on_overflow=False), dtype=np.int16)
-                normalized_data = data.astype(np.float32) / 32768.0
-                level, long_term_noise_level, current_noise_level = get_levels(
-                    normalized_data, long_term_noise_level, current_noise_level)
-                print(f"Baseline level: {level}")
-                self.audio_level.emit(float(level))
-
-            baseline = sum(long_term_noise_level) / len(long_term_noise_level)
-            voice_threshold = max(10, baseline * 2)  # Dynamic threshold based on baseline
-            print(f"Baseline noise: {baseline}, Voice threshold: {voice_threshold}")
-
-            # Main recording loop
-            while not self.isInterruptionRequested():
-                try:
-                    data = np.frombuffer(stream.read(1024, exception_on_overflow=False), dtype=np.int16)
-                    frames.append(data.tobytes())  # Always keep the audio data
-                    
-                    # Normalize data to float for level calculation
-                    normalized_data = data.astype(np.float32) / 32768.0
-                    level, long_term_noise_level, current_noise_level = get_levels(
-                        normalized_data, long_term_noise_level, current_noise_level)
-                    
-                    self.audio_level.emit(float(level))
-                    
-                    # Debug print
-                    if level > voice_threshold:
-                        print(f"Voice detected: {level} > {voice_threshold}")
-
-                    # Detect voice activity with dynamic threshold
-                    if level > voice_threshold:
-                        voice_started = True
-                        silence_counter = 0
-                    elif voice_started:
-                        silence_counter += 1
-                    
-                    # Stop after 2 seconds of silence (31 frames * 64ms = ~2s)
-                    if voice_started and silence_counter > 31:
-                        print("Stopping recording due to silence")
-                        break
-
-                except IOError as e:
-                    print(f"IOError during recording: {e}")
-                    self.error_occurred.emit("Error recording audio. Please check your microphone.")
-                    return
-
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
-
-            if len(frames) > 0:  # Always try to process the audio if we have frames
-                print(f"Processing {len(frames)} frames of audio")
-                wf = wave.open("voice_record.wav", 'wb')
-                wf.setnchannels(1)
-                wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-                wf.setframerate(16000)
-                wf.writeframes(b''.join(frames))
-                wf.close()
-                
-                try:
-                    user_text = " ".join(seg.text for seg in model.transcribe("voice_record.wav", language="en")[0])
-                    if user_text.strip():
-                        print(f"Transcribed text: {user_text}")
-                        self.finished.emit(user_text)
-                    else:
-                        print("No text transcribed")
-                        self.finished.emit("")
-                except Exception as e:
-                    print(f"Error transcribing audio: {e}")
-                    self.error_occurred.emit("Error transcribing audio. Please try again.")
-            else:
-                print("No frames recorded")
-                self.finished.emit("")
-
+            try:
+                text = r.recognize_google(self.audio)
+                print("Recognized text:", text)
+                self.recording_finished.emit(text)
+            except sr.UnknownValueError:
+                self.error_occurred.emit("Could not understand audio")
+            except sr.RequestError as e:
+                self.error_occurred.emit(f"Could not request results; {str(e)}")
         except Exception as e:
             error_msg = f"Error in audio recording: {str(e)}\n{traceback.format_exc()}"
             print(error_msg)
-            self.error_occurred.emit("Error with audio recording. Please check your microphone settings.")
+            self.error_occurred.emit("Error recording audio")
+
+    def stop(self):
+        self._recording = False
 
 class ChatResponseThread(QThread):
     response_ready = pyqtSignal(str)
@@ -194,25 +107,25 @@ class AvatarChatWidget(QWidget):
         # Chat display
         self.chat_display = QTextEdit()
         self.chat_display.setReadOnly(True)
-        self.chat_display.setFont(self.theme.SMALL_FONT)  # Changed from BODY_FONT to SMALL_FONT
+        self.chat_display.setFont(self.theme.SMALL_FONT)
         self.chat_display.setStyleSheet(f"""
             QTextEdit {{
-                background: {self.theme.get_color('primary_gradient')};
+                background-color: {self.theme.get_color('primary')};
                 color: {self.theme.get_color('text')};
                 border: 1px solid {self.theme.get_color('border')};
-                border-radius: 6px;  # Reduced from 8px to 6px
-                padding: 8px;  # Reduced from 12px to 8px
+                border-radius: 6px;
+                padding: 8px;
             }}
             QScrollBar:vertical {{
                 border: none;
-                background: {self.theme.get_color('primary')};
-                width: 6px;  # Reduced from 8px to 6px
+                background: {self.theme.get_color('secondary')};
+                width: 6px;
                 margin: 0px;
             }}
             QScrollBar::handle:vertical {{
                 background: {self.theme.get_color('accent')};
                 min-height: 20px;
-                border-radius: 3px;  # Reduced from 4px to 3px
+                border-radius: 3px;
             }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
                 border: none;
@@ -224,53 +137,25 @@ class AvatarChatWidget(QWidget):
         """)
         layout.addWidget(self.chat_display)
 
-        # Audio level indicator
-        self.level_indicator = QFrame()
-        self.level_indicator.setFixedHeight(4)
-        self.level_indicator.setFixedWidth(0)
-        self.level_indicator.setStyleSheet(f"""
-            QFrame {{
-                background: {self.theme.get_color('accent_gradient')};
-                border-radius: 2px;
-            }}
-        """)
-        
-        # Level indicator container
-        level_container = QFrame()
-        level_container.setFixedHeight(12)
-        level_container.setMinimumWidth(180)
-        level_container.setStyleSheet(f"""
-            QFrame {{
-                background: {self.theme.get_color('primary_gradient')};
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 6px;
-            }}
-        """)
-        
-        # Center the level indicator in its container
-        level_layout = QHBoxLayout(level_container)
-        level_layout.setContentsMargins(4, 4, 4, 4)
-        level_layout.addWidget(self.level_indicator)
-        level_layout.addStretch()
-        
         # Controls container
         controls = QFrame()
         controls.setObjectName("controls")
         controls_layout = QHBoxLayout(controls)
-        controls_layout.setContentsMargins(0, 0, 0, 0)
+        controls_layout.setContentsMargins(12, 0, 12, 0)
         controls_layout.setSpacing(8)
+        controls_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # Record button
-        self.record_button = QPushButton("🎤 Hold to Talk")
-        self.record_button.setFont(self.theme.BODY_FONT)
-        self.record_button.setFixedSize(180, 40)
+        self.record_button = QPushButton("🎤 Click to Talk")
+        self.record_button.setFont(self.theme.SMALL_FONT)
+        self.record_button.setFixedSize(150, 32)
         self.record_button.setStyleSheet(f"""
             QPushButton {{
                 background: {self.theme.get_color('primary_gradient')};
                 color: {self.theme.get_color('text')};
                 border: 1px solid {self.theme.get_color('border')};
-                border-radius: 20px;
-                padding: 8px;
+                border-radius: 16px;
+                padding: 6px;
             }}
             QPushButton:hover {{
                 background: {self.theme.get_color('accent_gradient')};
@@ -281,12 +166,7 @@ class AvatarChatWidget(QWidget):
                 border: 1px solid {self.theme.get_color('selected')};
             }}
         """)
-        self.record_button.pressed.connect(self.start_recording)
-        self.record_button.released.connect(self.stop_recording)
-
-        # Add controls to layout
-        controls_layout.addStretch()
-        controls_layout.addWidget(level_container)
+        self.record_button.clicked.connect(self.toggle_recording)
         controls_layout.addWidget(self.record_button)
         controls_layout.addStretch()
 
@@ -296,7 +176,7 @@ class AvatarChatWidget(QWidget):
         """Update widget styles when theme changes"""
         self.chat_display.setStyleSheet(f"""
             QTextEdit {{
-                background: {self.theme.get_color('primary_gradient')};
+                background-color: {self.theme.get_color('primary')};
                 color: {self.theme.get_color('text')};
                 border: 1px solid {self.theme.get_color('border')};
                 border-radius: 6px;
@@ -304,7 +184,7 @@ class AvatarChatWidget(QWidget):
             }}
             QScrollBar:vertical {{
                 border: none;
-                background: {self.theme.get_color('primary')};
+                background: {self.theme.get_color('secondary')};
                 width: 6px;
                 margin: 0px;
             }}
@@ -322,20 +202,13 @@ class AvatarChatWidget(QWidget):
             }}
         """)
         
-        self.level_indicator.setStyleSheet(f"""
-            QFrame {{
-                background: {self.theme.get_color('accent_gradient')};
-                border-radius: 2px;
-            }}
-        """)
-        
         self.record_button.setStyleSheet(f"""
             QPushButton {{
                 background: {self.theme.get_color('primary_gradient')};
                 color: {self.theme.get_color('text')};
                 border: 1px solid {self.theme.get_color('border')};
-                border-radius: 20px;
-                padding: 8px;
+                border-radius: 16px;
+                padding: 6px;
             }}
             QPushButton:hover {{
                 background: {self.theme.get_color('accent_gradient')};
@@ -355,30 +228,50 @@ class AvatarChatWidget(QWidget):
         self.chat_display.append(f'Chatting with {avatar_name}. Click the button to start recording.')
 
     def toggle_recording(self):
-        """Toggle recording state"""
-        if not self.recording and not self.response_thread:  # Only start if not already processing
+        """Handle recording button click"""
+        if not self.recording:
             self.start_recording()
-        elif self.recording:
+        else:
             self.stop_recording()
 
     def start_recording(self):
-        """Start a new recording"""
-        self.recorder_thread = AudioRecorderThread()
-        self.recorder_thread.finished.connect(self.process_audio)
-        self.recorder_thread.audio_level.connect(self.update_audio_level)
-        self.recorder_thread.error_occurred.connect(self.handle_error)
-        
-        self.recording = True
-        self.recorder_thread.start()
+        """Start recording audio"""
+        try:
+            self.recording = True
+            self.record_button.setText("🎤 Recording...")
+            self.record_button.setEnabled(False)
+            
+            # Clean up any existing recorder thread
+            if self.recorder_thread and self.recorder_thread.isRunning():
+                self.recorder_thread.wait()
+                self.recorder_thread = None
+            
+            # Start new recording thread
+            self.recorder_thread = AudioRecorderThread()
+            self.recorder_thread.recording_finished.connect(self.process_audio)
+            self.recorder_thread.error_occurred.connect(self.handle_error)
+            self.recorder_thread.start()
+            
+        except Exception as e:
+            error_msg = f"Error starting recording: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            self.handle_error("Error starting recording")
+            self.recording = False
+            self.record_button.setText("🎤 Click to Talk")
+            self.record_button.setEnabled(True)
 
     def stop_recording(self):
-        """Stop the current recording"""
-        if self.recorder_thread:
-            self.recorder_thread.requestInterruption()
-            self.recorder_thread.wait()
-            self.recorder_thread = None
-            
-        self.recording = False
+        """Stop recording audio"""
+        try:
+            if self.recorder_thread and self.recorder_thread.isRunning():
+                self.recorder_thread.stop()
+            self.recording = False
+            self.record_button.setText("🎤 Click to Talk")
+            self.record_button.setEnabled(True)
+        except Exception as e:
+            error_msg = f"Error stopping recording: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            self.handle_error("Error stopping recording")
 
     def process_audio(self, text):
         """Process recorded audio text"""
@@ -409,14 +302,19 @@ class AvatarChatWidget(QWidget):
                 self.response_thread.start()
             else:
                 self.handle_error("No speech detected. Try again.")
-                self.recording = False
-                self.response_thread = None
+                
+            # Reset button state
+            self.recording = False
+            self.record_button.setText("🎤 Click to Talk")
+            self.record_button.setEnabled(True)
+            
         except Exception as e:
             error_msg = f"Error processing audio: {str(e)}\n{traceback.format_exc()}"
             print(error_msg)
             self.handle_error("Error processing your speech. Please try again.")
             self.recording = False
-            self.response_thread = None
+            self.record_button.setText("🎤 Click to Talk")
+            self.record_button.setEnabled(True)
 
     def update_chat_response(self, chunk):
         """Display incoming chat response chunks"""
@@ -527,6 +425,4 @@ class AvatarChatWidget(QWidget):
         self.chat_display.append(f'\n<b>Error:</b> {error_message}')
 
     def update_audio_level(self, level):
-        bars = int(level / 100) if level > 0 else 0
-        width = min(self.width() * 0.8, bars * 20)  # Scale bars to widget width
-        self.level_indicator.setFixedWidth(int(width))
+        pass

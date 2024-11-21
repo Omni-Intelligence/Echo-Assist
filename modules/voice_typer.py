@@ -188,9 +188,19 @@ class VoiceTyperWidget(QWidget):
         layout.setSpacing(8)
 
         # Instructions
-        instructions = QLabel("Press Ctrl+Space to start/stop voice typing")
+        instructions = QLabel("Press Ctrl+Space to\nstart/stop voice typing")
         instructions.setFont(self.theme.SMALL_FONT)
         instructions.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        instructions.setWordWrap(True)
+        instructions.setStyleSheet(f"""
+            QLabel {{
+                color: {self.theme.get_color('text')};
+                background-color: {self.theme.get_color('primary')};
+                padding: 4px;
+                qproperty-alignment: AlignCenter;
+                border-radius: 4px;
+            }}
+        """)
         layout.addWidget(instructions)
 
         # Status label
@@ -198,10 +208,12 @@ class VoiceTyperWidget(QWidget):
         self.status_label.setFont(self.theme.SMALL_FONT)
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setStyleSheet(f"""
-            color: {self.theme.get_color('text')};
-            padding: 6px;
-            background-color: {self.theme.get_color('primary')};
-            border-radius: 4px;
+            QLabel {{
+                color: {self.theme.get_color('text')};
+                background-color: {self.theme.get_color('primary')};
+                padding: 6px;
+                border-radius: 4px;
+            }}
         """)
         layout.addWidget(self.status_label)
 
@@ -242,7 +254,7 @@ class VoiceTyperWidget(QWidget):
         self.text_display.setFont(self.theme.SMALL_FONT)
         self.text_display.setStyleSheet(f"""
             QTextEdit {{
-                background-color: {self.theme.get_color('primary_gradient')};
+                background-color: {self.theme.get_color('primary')};
                 color: {self.theme.get_color('text')};
                 border: 1px solid {self.theme.get_color('border')};
                 border-radius: 6px;
@@ -250,7 +262,7 @@ class VoiceTyperWidget(QWidget):
             }}
             QScrollBar:vertical {{
                 border: none;
-                background: {self.theme.get_color('primary')};
+                background: {self.theme.get_color('secondary')};
                 width: 6px;
                 margin: 0px;
             }}
@@ -271,6 +283,25 @@ class VoiceTyperWidget(QWidget):
 
     def update_theme(self):
         """Update widget styles when theme changes"""
+        self.status_label.setStyleSheet(f"""
+            QLabel {{
+                color: {self.theme.get_color('text')};
+                background-color: {self.theme.get_color('primary')};
+                padding: 6px;
+                border-radius: 4px;
+            }}
+        """)
+
+        instructions.setStyleSheet(f"""
+            QLabel {{
+                color: {self.theme.get_color('text')};
+                background-color: {self.theme.get_color('primary')};
+                padding: 4px;
+                qproperty-alignment: AlignCenter;
+                border-radius: 4px;
+            }}
+        """)
+
         self.level_indicator.setStyleSheet(f"""
             QFrame {{
                 background-color: {self.theme.get_color('accent')};
@@ -280,7 +311,7 @@ class VoiceTyperWidget(QWidget):
         
         self.text_display.setStyleSheet(f"""
             QTextEdit {{
-                background-color: {self.theme.get_color('primary_gradient')};
+                background-color: {self.theme.get_color('primary')};
                 color: {self.theme.get_color('text')};
                 border: 1px solid {self.theme.get_color('border')};
                 border-radius: 6px;
@@ -288,7 +319,7 @@ class VoiceTyperWidget(QWidget):
             }}
             QScrollBar:vertical {{
                 border: none;
-                background: {self.theme.get_color('primary')};
+                background: {self.theme.get_color('secondary')};
                 width: 6px;
                 margin: 0px;
             }}
@@ -323,8 +354,8 @@ class VoiceTyperWidget(QWidget):
             self.status_label.setText("Recording... Speak now!")
             self.status_label.setStyleSheet(f"""
                 color: {self.theme.get_color('text')};
-                padding: 6px;
                 background-color: #FF3B30;
+                padding: 6px;
                 border-radius: 4px;
             """)
             
@@ -343,8 +374,8 @@ class VoiceTyperWidget(QWidget):
             self.status_label.setText('Processing... Please wait')
             self.status_label.setStyleSheet(f"""
                 color: {self.theme.get_color('text')};
-                padding: 6px;
                 background-color: {self.theme.get_color('primary')};
+                padding: 6px;
                 border-radius: 4px;
             """)
 
@@ -361,8 +392,8 @@ class VoiceTyperWidget(QWidget):
         self.status_label.setText('Ready')
         self.status_label.setStyleSheet(f"""
             color: {self.theme.get_color('text')};
-            padding: 6px;
             background-color: {self.theme.get_color('primary')};
+            padding: 6px;
             border-radius: 4px;
         """)
 
@@ -372,8 +403,8 @@ class VoiceTyperWidget(QWidget):
         self.status_label.setText(f"Error: {error_message}\nPress Ctrl+Space to try again")
         self.status_label.setStyleSheet(f"""
             color: white;
-            padding: 6px;
             background-color: #FF3B30;
+            padding: 6px;
             border-radius: 4px;
         """)
         self.is_recording = False
@@ -390,7 +421,7 @@ class VoiceTyperWidget(QWidget):
         self.status_label.setText(message)
         self.status_label.setStyleSheet(f"""
             color: {self.theme.get_color('text')};
-            padding: 6px;
             background-color: {self.theme.get_color('primary')};
+            padding: 6px;
             border-radius: 4px;
         """)

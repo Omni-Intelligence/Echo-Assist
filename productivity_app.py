@@ -25,7 +25,7 @@ class ProductivityApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('AI Voice Assistant')
+        self.setWindowTitle('AI Assistant')
         self.resize(self.current_size)
         
         # Create main widget and layout
@@ -95,6 +95,7 @@ class ProductivityApp(QMainWindow):
         self.avatar_label = QLabel("Avatar")
         self.avatar_combo = QComboBox()
         self.avatar_combo.addItems(list(AVATARS.keys()))
+        self.avatar_combo.currentTextChanged.connect(self.change_avatar)  # Connect the change event
         self.avatar_label.hide()
         self.avatar_combo.hide()
         
@@ -188,7 +189,9 @@ class ProductivityApp(QMainWindow):
             self.avatar_combo.hide()
 
     def change_avatar(self, avatar_name):
-        self.avatar_chat.set_avatar(avatar_name)
+        """Update the current avatar and its voice"""
+        if avatar_name in AVATARS:
+            self.avatar_chat.set_avatar(avatar_name)
 
     def change_theme(self, theme_name):
         """Update application theme"""

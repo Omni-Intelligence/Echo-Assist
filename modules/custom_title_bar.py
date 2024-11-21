@@ -4,7 +4,7 @@ from PyQt6.QtGui import QMouseEvent
 
 class CustomTitleBar(QFrame):
     """A custom title bar with window controls and dragging functionality"""
-    def __init__(self, parent=None, title="🎯 AI Voice Assistant"):
+    def __init__(self, parent=None, title="🎯 AI Assistant"):
         super().__init__(parent)
         if not isinstance(parent, QMainWindow):
             raise TypeError("CustomTitleBar parent must be a QMainWindow")
