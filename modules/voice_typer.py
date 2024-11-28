@@ -14,9 +14,10 @@ class VoiceTyperThread(QThread):
     error_occurred = pyqtSignal(str)
     transcribing_status = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, input_device_index=None):
         super().__init__()
         self.stop_event = Event()
+        self.input_device_index = input_device_index
         try:
             # Use small model for faster processing
             self.model = faster_whisper.WhisperModel("tiny.en", 
@@ -34,9 +35,26 @@ class VoiceTyperThread(QThread):
             # Initialize audio
             audio = pyaudio.PyAudio()
             
-            # Get default input device info
-            device_info = audio.get_default_input_device_info()
-            print(f"Using audio device: {device_info['name']}")
+            # Print available input devices for debugging
+            print("\nAvailable Input Devices:")
+            for i in range(audio.get_device_count()):
+                dev = audio.get_device_info_by_index(i)
+                if dev['maxInputChannels'] > 0:
+                    print(f"Index {i}: {dev['name']}")
+            
+            # Use specified device or fall back to default
+            if self.input_device_index is not None:
+                try:
+                    device_info = audio.get_device_info_by_index(self.input_device_index)
+                    print(f"\nUsing selected audio device: {device_info['name']} (Index: {self.input_device_index})")
+                except Exception as e:
+                    print(f"Error getting selected device info: {e}")
+                    device_info = audio.get_default_input_device_info()
+                    print(f"Falling back to default device: {device_info['name']}")
+                    self.input_device_index = None
+            else:
+                device_info = audio.get_default_input_device_info()
+                print(f"\nUsing default audio device: {device_info['name']}")
             
             # Open stream with error handling
             try:
@@ -46,7 +64,7 @@ class VoiceTyperThread(QThread):
                     channels=1,
                     input=True,
                     frames_per_buffer=512,
-                    input_device_index=device_info['index']
+                    input_device_index=self.input_device_index
                 )
             except Exception as e:
                 print(f"Error opening audio stream: {e}")
@@ -155,7 +173,8 @@ class VoiceTyperWidget(QWidget):
         self.recorder_thread = None
         self.is_recording = False
         self.max_level_width = 200
-        self.auto_enter = False  # New setting for auto-enter feature
+        self.auto_enter = True  # Changed to True for default state
+        self.selected_input_device = None
         self.initUI()
         
         # Initialize keyboard hook with better event handling
@@ -187,7 +206,7 @@ class VoiceTyperWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
-
+        
         # Instructions
         instructions = QLabel("Press Ctrl+Space to\nstart/stop voice typing")
         instructions.setFont(self.theme.SMALL_FONT)
@@ -252,6 +271,7 @@ class VoiceTyperWidget(QWidget):
         # Auto-enter checkbox
         self.auto_enter_checkbox = QCheckBox("Auto-press Enter")
         self.auto_enter_checkbox.setFont(self.theme.SMALL_FONT)
+        self.auto_enter_checkbox.setChecked(True)  # Set checkbox to checked by default
         self.auto_enter_checkbox.setStyleSheet(f"""
             QCheckBox {{
                 color: {self.theme.get_color('text')};
@@ -314,16 +334,6 @@ class VoiceTyperWidget(QWidget):
             }}
         """)
 
-        instructions.setStyleSheet(f"""
-            QLabel {{
-                color: {self.theme.get_color('text')};
-                background-color: {self.theme.get_color('primary')};
-                padding: 4px;
-                qproperty-alignment: AlignCenter;
-                border-radius: 4px;
-            }}
-        """)
-
         self.level_indicator.setStyleSheet(f"""
             QFrame {{
                 background-color: {self.theme.get_color('accent')};
@@ -374,23 +384,37 @@ class VoiceTyperWidget(QWidget):
             else:
                 self.start_recording()
 
+    def update_input_device(self, device_index):
+        """Update the input device for audio capture"""
+        print(f"VoiceTyper: Updating input device to index: {device_index}")
+        self.selected_input_device = device_index
+        # If currently recording, restart with new device
+        if self.is_recording:
+            self.stop_recording()
+            self.start_recording()
+
     def start_recording(self):
-        if not self.recorder_thread and self.isVisible():
-            self.is_recording = True
-            self.status_label.setText("Recording... Speak now!")
-            self.status_label.setStyleSheet(f"""
-                color: {self.theme.get_color('text')};
-                background-color: #FF3B30;
-                padding: 6px;
-                border-radius: 4px;
-            """)
-            
-            self.recorder_thread = VoiceTyperThread()
-            self.recorder_thread.text_ready.connect(self.handle_text)
-            self.recorder_thread.audio_level.connect(self.update_audio_level)
-            self.recorder_thread.error_occurred.connect(self.handle_error)
-            self.recorder_thread.transcribing_status.connect(self.update_status)
-            self.recorder_thread.start()
+        """Start recording with the selected input device"""
+        if not self.is_recording:
+            try:
+                self.is_recording = True
+                self.status_label.setText("Recording...")
+                
+                # Clean up any existing recorder thread
+                if self.recorder_thread and self.recorder_thread.isRunning():
+                    self.recorder_thread.wait()
+                    self.recorder_thread = None
+                
+                # Create new recorder thread with selected device
+                self.recorder_thread = VoiceTyperThread(input_device_index=self.selected_input_device)
+                self.recorder_thread.text_ready.connect(self.handle_text)
+                self.recorder_thread.error_occurred.connect(self.handle_error)
+                self.recorder_thread.audio_level.connect(self.update_audio_level)
+                self.recorder_thread.transcribing_status.connect(self.update_status)
+                self.recorder_thread.start()
+            except Exception as e:
+                self.handle_error(f"Error starting recording: {str(e)}")
+                self.stop_recording()
 
     def stop_recording(self):
         if self.recorder_thread:
@@ -406,24 +430,29 @@ class VoiceTyperWidget(QWidget):
             """)
 
     def handle_text(self, text):
-        # Preview the text first
-        self.text_display.setPlainText(text)
-        print(f"Received transcribed text: {text}")
-        
-        # Write the text without adding extra spaces
-        if text:
-            keyboard.write(text)
-            if self.auto_enter:
-                keyboard.press_and_release('enter')
-        
-        # Reset the UI
-        self.status_label.setText('Ready')
-        self.status_label.setStyleSheet(f"""
-            color: {self.theme.get_color('text')};
-            background-color: {self.theme.get_color('primary')};
-            padding: 6px;
-            border-radius: 4px;
-        """)
+        """Handle transcribed text"""
+        try:
+            # Preview the text first
+            self.text_display.setPlainText(text)
+            print(f"Received transcribed text: {text}")
+            
+            # Write the text without adding extra spaces
+            if text:
+                keyboard.write(text)
+                if self.auto_enter:
+                    keyboard.press_and_release('enter')
+            
+            # Reset the UI
+            self.status_label.setText('Ready')
+            self.status_label.setStyleSheet(f"""
+                color: {self.theme.get_color('text')};
+                background-color: {self.theme.get_color('primary')};
+                padding: 6px;
+                border-radius: 4px;
+            """)
+        except Exception as e:
+            print(f"Error in handle_text: {e}")
+            self.status_label.setText("Error processing text")
 
     def handle_error(self, error_message):
         """Handle errors from the recording thread"""

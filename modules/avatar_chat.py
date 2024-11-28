@@ -30,22 +30,35 @@ class AudioRecorderThread(QThread):
     recording_finished = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, input_device_index=None):
         super().__init__()
         self._recording = False
         self.audio = None
-        self.silence_threshold = 800  # Reduced from 1000 to 800
-        self.silence_duration = 1.0   # Reduced from 1.5 to 1.0 seconds
+        self.silence_threshold = 300  # Even lower threshold
+        self.silence_duration = 2.5   # Longer silence duration
         self.chunk_size = 1024
         self.sample_format = pyaudio.paInt16
         self.channels = 1
         self.sample_rate = 44100
-        self.min_phrase_time = 0.5    # Reduced from 1.0 to 0.5 seconds
+        self.min_phrase_time = 0.5
+        self.debug_mode = True
+        self.buffer_size = 50  # Number of frames to keep for rolling average
+        self.audio_buffer = collections.deque(maxlen=self.buffer_size)
+        self.post_speech_buffer = 1.0  # Additional recording time after speech
+        self.input_device_index = input_device_index
 
     def is_silent(self, audio_data):
         rms = np.sqrt(np.mean(np.array(audio_data) ** 2))
-        print(f"Current RMS: {rms}")  # Debug output
-        return rms < self.silence_threshold
+        self.audio_buffer.append(rms)
+        
+        # Calculate rolling average
+        rolling_rms = np.mean(self.audio_buffer) if len(self.audio_buffer) > 0 else rms
+        
+        if self.debug_mode:
+            if np.random.random() < 0.1:
+                print(f"Current Level: {rms:.2f} | Rolling Avg: {rolling_rms:.2f} | Threshold: {self.silence_threshold}")
+        
+        return rolling_rms < self.silence_threshold
 
     def run(self):
         try:
@@ -54,18 +67,35 @@ class AudioRecorderThread(QThread):
             import io
 
             p = pyaudio.PyAudio()
+            
+            # Print available input devices if in debug mode
+            if self.debug_mode:
+                print("\nAvailable Input Devices:")
+                for i in range(p.get_device_count()):
+                    dev = p.get_device_info_by_index(i)
+                    if dev['maxInputChannels'] > 0:
+                        print(f"Index {i}: {dev['name']}")
+                if self.input_device_index is not None:
+                    print(f"\nUsing input device index: {self.input_device_index}")
+                    dev = p.get_device_info_by_index(self.input_device_index)
+                    print(f"Selected device: {dev['name']}")
+                else:
+                    print("\nUsing default input device")
+
             stream = p.open(format=self.sample_format,
                           channels=self.channels,
                           rate=self.sample_rate,
                           input=True,
+                          input_device_index=self.input_device_index,
                           frames_per_buffer=self.chunk_size)
 
-            print("Recording...")
+            print("Recording started - Listening for voice...")
             frames = []
             self._recording = True
-            last_sound_time = time.time()
             start_time = time.time()
             silence_start = None
+            last_speech_time = time.time()
+            recording_buffer_active = False
 
             while self._recording:
                 data = stream.read(self.chunk_size, exception_on_overflow=False)
@@ -78,18 +108,34 @@ class AudioRecorderThread(QThread):
 
                 # Check for silence
                 audio_data = np.frombuffer(data, dtype=np.int16)
-                if self.is_silent(audio_data):
+                if not self.is_silent(audio_data):
+                    if self.debug_mode and silence_start is not None:
+                        print("Voice detected, continuing recording...")
+                    silence_start = None
+                    last_speech_time = current_time
+                    recording_buffer_active = True
+                else:
                     if silence_start is None:
                         silence_start = current_time
-                    elif current_time - silence_start > self.silence_duration:
-                        print(f"Silence detected for {current_time - silence_start:.2f} seconds, stopping recording")
+                        if self.debug_mode:
+                            print("Potential silence detected...")
+                    
+                    # Check if we're in the post-speech buffer period
+                    if recording_buffer_active and current_time - last_speech_time <= self.post_speech_buffer:
+                        if self.debug_mode and np.random.random() < 0.1:
+                            print(f"In post-speech buffer: {self.post_speech_buffer - (current_time - last_speech_time):.1f}s remaining")
+                        continue
+                    
+                    # Only stop if we've been silent for long enough and we're past the buffer period
+                    if current_time - silence_start > self.silence_duration:
+                        if self.debug_mode:
+                            print(f"Stopping: Silence duration: {current_time - silence_start:.1f}s")
+                            print(f"Total recording: {current_time - start_time:.1f}s")
                         break
-                else:
-                    silence_start = None
-                    last_sound_time = current_time
 
             total_duration = time.time() - start_time
-            print(f"Recording finished. Total duration: {total_duration:.2f} seconds")
+            if self.debug_mode:
+                print(f"Recording finished. Duration: {total_duration:.1f}s")
             
             # Stop and close the stream
             stream.stop_stream()
@@ -159,6 +205,45 @@ class ChatResponseThread(QThread):
             print(error_msg)  # Log the error
             self.error_occurred.emit("Sorry, there was an error processing your request. Please try again.")
 
+class VoicePlaybackThread(QThread):
+    finished = pyqtSignal()
+    error = pyqtSignal(str)
+    
+    def __init__(self, text, voice_id):
+        super().__init__()
+        self.text = text
+        self.voice_id = voice_id
+        self._stop = False
+        self.audio_stream = None
+    
+    def run(self):
+        try:
+            self.audio_stream = elevenlabs_client.generate(
+                text=self.text,
+                voice=self.voice_id,
+                model="eleven_multilingual_v2",
+                stream=True
+            )
+            if not self._stop:
+                stream(self.audio_stream)
+            self.finished.emit()
+        except Exception as e:
+            self.error.emit(str(e))
+        finally:
+            self.cleanup()
+    
+    def stop(self):
+        self._stop = True
+        self.cleanup()
+    
+    def cleanup(self):
+        if self.audio_stream:
+            try:
+                self.audio_stream.close()
+            except:
+                pass
+            self.audio_stream = None
+
 class AvatarChatWidget(QWidget):
     def __init__(self, theme, avatars):
         super().__init__()
@@ -169,8 +254,10 @@ class AvatarChatWidget(QWidget):
         self.display_messages = []
         self.recorder_thread = None
         self.response_thread = None
+        self.voice_thread = None
         self.recording = False
         self.current_response = ""
+        self.selected_input_device = None
         self.initUI()
 
     def initUI(self):
@@ -300,7 +387,7 @@ class AvatarChatWidget(QWidget):
         self.chat_history = [{"role": "system", "content": self.avatars[avatar_name]['system_prompt']}]
         self.display_messages = []  # Clear display messages
         self.chat_display.clear()
-        self.chat_display.append(f'Chatting with {avatar_name}. Click the button to start recording.')
+        self.chat_display.append(f'<i>Echo Assist is ready. Chatting with {avatar_name}. Click the button to start recording.</i>\n')
 
     def toggle_recording(self):
         """Handle recording button click"""
@@ -321,8 +408,8 @@ class AvatarChatWidget(QWidget):
                 self.recorder_thread.wait()
                 self.recorder_thread = None
             
-            # Start new recording thread
-            self.recorder_thread = AudioRecorderThread()
+            # Start new recording thread with selected input device
+            self.recorder_thread = AudioRecorderThread(input_device_index=self.selected_input_device)
             self.recorder_thread.recording_finished.connect(self.process_audio)
             self.recorder_thread.error_occurred.connect(self.handle_error)
             self.recorder_thread.start()
@@ -330,7 +417,7 @@ class AvatarChatWidget(QWidget):
         except Exception as e:
             error_msg = f"Error starting recording: {str(e)}\n{traceback.format_exc()}"
             print(error_msg)
-            self.handle_error("Error starting recording")
+            self.handle_error(error_msg)
             self.recording = False
             self.record_button.setText("🎤 Click to Talk")
             self.record_button.setEnabled(True)
@@ -417,7 +504,7 @@ class AvatarChatWidget(QWidget):
             self.chat_display.clear()
             
             # Add the initial message in italics
-            self.chat_display.append(f'<i>Chatting with {self.current_avatar}. Click the button to start recording.</i>\n')
+            self.chat_display.append(f'<i>Echo Assist is ready. Chatting with {self.current_avatar}. Click the button to start recording.</i>\n')
             
             # Add all messages with proper styling
             for speaker, message in self.display_messages:
@@ -466,28 +553,47 @@ class AvatarChatWidget(QWidget):
             # Generate and play voice response
             try:
                 voice_id = self.avatars[self.current_avatar]['voice_id']
-                audio_stream = elevenlabs_client.generate(
-                    text=response,
-                    voice=voice_id,
-                    model="eleven_multilingual_v2",
-                    stream=True
-                )
-                # Play the audio stream
-                stream(audio_stream)
+                self.voice_thread = VoicePlaybackThread(response, voice_id)
+                self.voice_thread.finished.connect(self.on_voice_finished)
+                self.voice_thread.error.connect(self.handle_error)
+                self.record_button.setText("🔊 Stop")
+                self.record_button.setEnabled(True)
+                self.record_button.clicked.disconnect()
+                self.record_button.clicked.connect(self.stop_voice)
+                self.voice_thread.start()
                 
             except Exception as e:
-                print(f"Error generating voice: {e}")
-                self.handle_error("Error generating voice response")
-                
-            finally:
-                # Always reset the state, regardless of voice generation success
-                self.recording = False
-                self.current_response = ""
+                error_msg = f"Error generating voice: {str(e)}\nFull traceback:\n{traceback.format_exc()}"
+                print(error_msg)
+                self.handle_error(f"ElevenLabs Error: {str(e)}")
+                self.reset_record_button()
                 
         except Exception as e:
             print(f"Error in handle_chat_response: {str(e)}")
             self.handle_error("Error processing AI response")
-            self.recording = False
+            self.reset_record_button()
+
+    def stop_voice(self):
+        """Stop the current voice playback"""
+        if self.voice_thread and self.voice_thread.isRunning():
+            self.voice_thread.stop()
+            self.cleanup_voice_thread()
+        self.reset_record_button()
+
+    def on_voice_finished(self):
+        """Handle voice playback completion"""
+        self.cleanup_voice_thread()
+        self.reset_record_button()
+
+    def reset_record_button(self):
+        """Reset the record button to its initial state"""
+        self.record_button.setText("🎤 Click to Talk")
+        self.record_button.setEnabled(True)
+        try:
+            self.record_button.clicked.disconnect()
+        except:
+            pass
+        self.record_button.clicked.connect(self.toggle_recording)
 
     def cleanup_response_thread(self):
         """Clean up after response is complete"""
@@ -496,8 +602,23 @@ class AvatarChatWidget(QWidget):
                 self.response_thread.wait()
             self.response_thread = None
 
+    def cleanup_voice_thread(self):
+        """Clean up after voice playback is complete"""
+        if self.voice_thread:
+            if self.voice_thread.isRunning():
+                self.voice_thread.wait()
+            self.voice_thread = None
+
     def handle_error(self, error_message):
         self.chat_display.append(f'\n<b>Error:</b> {error_message}')
 
     def update_audio_level(self, level):
         pass
+
+    def update_input_device(self, device_index):
+        """Update the input device for audio capture"""
+        print(f"Updating input device to index: {device_index}")
+        self.selected_input_device = device_index
+        if self.recording:
+            self.stop_recording()
+            self.start_recording()

@@ -2,6 +2,7 @@ import sys
 import os
 import ctypes
 import traceback
+import pyaudio
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                            QHBoxLayout, QLabel, QFrame, QComboBox, QMessageBox,
                            QPushButton, QSlider, QStackedWidget)
@@ -14,6 +15,7 @@ from modules.custom_title_bar import CustomTitleBar
 from modules.voice_typer import VoiceTyperWidget
 from modules.avatar_chat import AvatarChatWidget
 from modules.screenshot import ScreenshotWidget
+from modules.real_time_chat import RealTimeChatWidget
 from avatars.avatar_configs import AVATARS
 
 class ProductivityApp(QMainWindow):
@@ -24,6 +26,11 @@ class ProductivityApp(QMainWindow):
         self.theme = ThemeConfig()
         self.current_size = self.theme.sizes["window"]
         self.setMinimumSize(300, 400)
+        
+        # Initialize PyAudio for device enumeration
+        self.p = pyaudio.PyAudio()
+        self.selected_input_device = None
+        
         self.initUI()
 
     def initUI(self):
@@ -47,8 +54,8 @@ class ProductivityApp(QMainWindow):
         # Create content container
         content_container = QWidget()
         content_layout = QHBoxLayout(content_container)
-        content_layout.setContentsMargins(4, 4, 4, 4)
-        content_layout.setSpacing(4)
+        content_layout.setContentsMargins(8, 8, 8, 8)  # Increased margins
+        content_layout.setSpacing(8)  # Increased spacing
         
         # Create sidebar and content
         self.sidebar = self.create_sidebar()
@@ -69,15 +76,16 @@ class ProductivityApp(QMainWindow):
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
         sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(4, 4, 4, 4)
-        sidebar_layout.setSpacing(4)
+        sidebar_layout.setContentsMargins(8, 8, 8, 8)  # Increased margins
+        sidebar_layout.setSpacing(8)  # Increased spacing
         
         # Create navigation buttons
         nav_buttons = [
             ("💬 Chat Assistant", 0),
-            ("⌨️ Voice Typer", 1),
-            ("📸 Screenshot Analysis", 2),  # New button for screenshot analysis
-            ("⚙️ Settings", 3)
+            ("🔴 Real-time", 1),
+            ("⌨️ Voice Typer", 2),
+            ("📸 Screenshot Analysis", 3),
+            ("⚙️ Settings", 4)
         ]
         
         for text, index in nav_buttons:
@@ -102,11 +110,14 @@ class ProductivityApp(QMainWindow):
         
         # Create and add pages
         self.avatar_chat = AvatarChatWidget(self.theme, AVATARS)
+        self.avatar_chat.set_avatar('Joe')  # Set default avatar
+        self.real_time_chat = RealTimeChatWidget(self.theme)  # Initialize real-time chat
         self.voice_typer = VoiceTyperWidget(self.theme)
         self.screenshot_widget = ScreenshotWidget(self.theme)  # New screenshot widget
         self.settings_widget = self.create_settings_widget()  # Add settings widget back
         
         self.stack.addWidget(self.avatar_chat)
+        self.stack.addWidget(self.real_time_chat)  # Add real-time chat widget to stack
         self.stack.addWidget(self.voice_typer)
         self.stack.addWidget(self.screenshot_widget)  # Add screenshot widget to stack
         self.stack.addWidget(self.settings_widget)  # Add settings widget to stack
@@ -271,16 +282,55 @@ class ProductivityApp(QMainWindow):
         settings_layout.addWidget(avatar_label)
 
         avatar_combo = QComboBox()
-        avatar_combo.addItems(['Joe', 'Ashley', 'Brian'])  # Explicitly list the avatars in order
-        avatar_combo.setCurrentText('Joe')  # Set default to Joe
+        avatar_combo.addItems(['Joe', 'Ashley', 'Brian'])
+        avatar_combo.setCurrentText('Joe')
         avatar_combo.currentTextChanged.connect(self.change_avatar)
         avatar_combo.setFont(self.theme.SMALL_FONT)
         settings_layout.addWidget(avatar_combo)
+
+        # Microphone selection
+        mic_label = QLabel("Microphone")
+        mic_label.setFont(self.theme.SMALL_FONT)
+        settings_layout.addWidget(mic_label)
+
+        self.mic_combo = QComboBox()
+        self.mic_combo.setFont(self.theme.SMALL_FONT)
+        
+        # Get available input devices
+        input_devices = []
+        for i in range(self.p.get_device_count()):
+            device_info = self.p.get_device_info_by_index(i)
+            if device_info['maxInputChannels'] > 0:  # Only add input devices
+                name = device_info['name']
+                input_devices.append((name, i))
+                self.mic_combo.addItem(name, i)  # Store device index in user data
+        
+        # Set default device
+        default_index = self.p.get_default_input_device_info()['index']
+        default_device_name = self.p.get_device_info_by_index(default_index)['name']
+        self.mic_combo.setCurrentText(default_device_name)
+        self.selected_input_device = default_index
+        
+        self.mic_combo.currentIndexChanged.connect(self.change_microphone)
+        settings_layout.addWidget(self.mic_combo)
 
         # Add stretch to push everything to the top
         settings_layout.addStretch()
 
         return settings_widget
+
+    def change_microphone(self, index):
+        """Update the selected input device"""
+        self.selected_input_device = self.mic_combo.currentData()
+        print(f"\nChanging microphone to device index: {self.selected_input_device}")
+        
+        # Update the input device for all audio interfaces
+        if hasattr(self, 'avatar_chat'):
+            self.avatar_chat.update_input_device(self.selected_input_device)
+        if hasattr(self, 'real_time_chat'):
+            self.real_time_chat.update_input_device(self.selected_input_device)
+        if hasattr(self, 'voice_typer'):
+            self.voice_typer.update_input_device(self.selected_input_device)
 
 def exception_hook(exctype, value, tb):
     """Global exception handler to prevent app from crashing silently"""
