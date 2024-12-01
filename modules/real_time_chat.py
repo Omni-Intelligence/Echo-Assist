@@ -211,6 +211,7 @@ class RealTimeChatWidget(QWidget):
         self.ws = None
         self.conversation_active = False
         self.conversation_thread = None
+        self.cleanup_thread = None
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 3
         self.initUI()
@@ -340,41 +341,52 @@ class RealTimeChatWidget(QWidget):
             self.stop_conversation()
 
     def stop_conversation(self):
-        """Stop conversation with proper cleanup"""
+        """Stop conversation immediately with async cleanup"""
         if not self.conversation_active:
             return
 
+        # Immediately update UI state
         self.conversation_active = False
-        self.toggle_button.setEnabled(False)  # Temporarily disable while stopping
-        self.toggle_button.setText("Stopping...")
+        self.toggle_button.setText("Start Conversation")
         self.update_theme()
+        
+        # Start async cleanup
+        def cleanup():
+            try:
+                # Force close WebSocket
+                if self.ws:
+                    try:
+                        self.ws.close()
+                    except:
+                        pass
+                    self.ws = None
 
-        try:
-            # Close WebSocket
-            if self.ws:
-                try:
-                    self.ws.close()
-                except Exception as e:
-                    print(f"Error closing WebSocket: {e}")
-                self.ws = None
+                # Stop audio immediately
+                if self.audio_interface:
+                    try:
+                        self.audio_interface.stop()
+                    except:
+                        pass
 
-            # Stop audio
-            if self.audio_interface:
-                try:
-                    self.audio_interface.stop()
-                except Exception as e:
-                    print(f"Error stopping audio: {e}")
+                # Force kill the conversation thread if it's stuck
+                if self.conversation_thread and self.conversation_thread.is_alive():
+                    try:
+                        self.conversation_thread.join(timeout=0.5)
+                    except:
+                        pass
+                    
+            except Exception as e:
+                print(f"Cleanup error (non-blocking): {e}")
+            finally:
+                self.cleanup_thread = None
 
-            # Wait for thread to finish with timeout
-            if self.conversation_thread and self.conversation_thread.is_alive():
-                self.conversation_thread.join(timeout=2.0)
-
-        except Exception as e:
-            self.display_message("System", f"Error during cleanup: {str(e)}")
-        finally:
-            self.toggle_button.setEnabled(True)
-            self.toggle_button.setText("Start Conversation")
-            self.update_theme()
+        # Run cleanup in background
+        if self.cleanup_thread and self.cleanup_thread.is_alive():
+            return  # Cleanup already in progress
+            
+        self.cleanup_thread = threading.Thread(target=cleanup)
+        self.cleanup_thread.daemon = True
+        self.cleanup_thread.start()
 
     def _run_conversation(self):
         """Main conversation loop with improved error handling and recovery"""
@@ -382,8 +394,8 @@ class RealTimeChatWidget(QWidget):
         
         while self.conversation_active and self.reconnect_attempts < self.max_reconnect_attempts:
             try:
-                # Connect to WebSocket
-                self.ws = connect(ws_url, timeout=10)  # Add connection timeout
+                # Connect to WebSocket with shorter timeout
+                self.ws = connect(ws_url, timeout=5)
                 self.ws.send(json.dumps({
                     "type": "conversation_initiation_client_data",
                     "custom_llm_extra_body": {},
@@ -402,9 +414,9 @@ class RealTimeChatWidget(QWidget):
                         self.ws.send(json.dumps({
                             "user_audio_chunk": base64.b64encode(audio).decode(),
                         }))
-                    except Exception as e:
-                        print(f"Error sending audio: {e}")
-                        self.handle_connection_error()
+                    except:
+                        # Don't handle error here, let the main loop handle it
+                        return
 
                 # Start audio processing
                 try:
@@ -414,23 +426,26 @@ class RealTimeChatWidget(QWidget):
                     self.stop_conversation()
                     return
 
-                # Main message processing loop
+                # Main message processing loop with faster timeouts
                 while self.conversation_active:
                     try:
-                        message = json.loads(self.ws.recv(timeout=1.0))
+                        message = json.loads(self.ws.recv(timeout=0.5))
                         self._handle_message(message)
                     except TimeoutError:
-                        continue  # Normal timeout, just continue
-                    except Exception as e:
-                        print(f"Error in message loop: {e}")
                         if not self.conversation_active:
-                            break
+                            return
+                        continue
+                    except Exception as e:
+                        if not self.conversation_active:
+                            return
+                        print(f"Error in message loop: {e}")
                         self.handle_connection_error()
                         break
 
             except Exception as e:
                 if not self.conversation_active:
-                    break
+                    return
+                print(f"Connection error: {e}")
                 self.handle_connection_error()
 
             finally:
@@ -441,7 +456,6 @@ class RealTimeChatWidget(QWidget):
                         pass
                     self.ws = None
 
-        # Final cleanup if we exit the retry loop
         if self.conversation_active:
             self.display_message("System", "Connection lost. Please try again.")
             self.stop_conversation()

@@ -1,118 +1,134 @@
-# AI Voice Assistant
+# Echo Assist - AI Voice Assistant & Chat Application
 
-A powerful productivity application that combines voice typing and AI chat capabilities. This application features real-time speech-to-text transcription and interactive conversations with customizable AI avatars.
+A powerful desktop productivity application that combines voice typing, AI chat capabilities, and screenshot functionality. Echo Assist features real-time speech-to-text transcription, interactive conversations with customizable AI avatars, and a modern, user-friendly interface.
 
-## Features
+## Key Features
 
 ### Voice Typing
-- Real-time speech-to-text transcription using Whisper
-- Live audio level visualization
-- Keyboard shortcuts (Ctrl+Space) for easy recording control
+- Real-time speech-to-text transcription powered by OpenAI's Whisper model
+- Live audio level visualization for input monitoring
+- Convenient keyboard shortcuts (Ctrl+Space) for recording control
 - Clear status updates and error feedback
-- Preview window for transcribed text
+- Preview window for transcribed text before use
 
 ### Avatar Chat
-- Interactive conversations with AI avatars
+- Interactive conversations with AI-powered avatars
 - Multiple customizable avatar personalities
 - Clean and intuitive chat interface
-- Message history management
-- Real-time response streaming
+- Message history tracking and management
+- Real-time response streaming for natural conversation flow
 
-## Requirements
+### Screenshot Functionality
+- Capture and annotate screen content
+- Quick access to screen capture tools
+- Integration with chat and voice features
 
+## Getting Started
+
+### Prerequisites
 - Python 3.8 or higher
-- CUDA-capable GPU (recommended for better performance)
-- Windows OS (tested on Windows 10/11)
-- Microphone for voice typing
+- Windows 10/11
+- CUDA-capable GPU (recommended for optimal performance)
+- Working microphone for voice features
+- Internet connection for AI services
 
-## Installation
+### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/EDNAHQ/ai-voice-app.git
-cd ai-voice-app
-```
+1. Clone the Repository
+   ```bash
+   git clone [your-repository-url]
+   cd echo-assist
+   ```
 
-2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
+2. Install Dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-3. Set up environment variables:
-Create a `.env` file in the root directory with your API keys:
-```
-OPENAI_API_KEY=your_openai_api_key
-ELEVENLABS_API_KEY=your_elevenlabs_api_key
-```
+3. Configure Environment Variables
+   Create a `.env` file in the root directory:
+   ```plaintext
+   OPENAI_API_KEY=your_openai_api_key
+   ELEVENLABS_API_KEY=your_elevenlabs_api_key
+   ```
 
-## Usage
+### Quick Start
 
-### Running the Application
+1. Launch the Application
+   - Double-click `run.bat`, or
+   - Run from command line:
+     ```bash
+     python productivity_app.py
+     ```
 
-1. Use the provided batch file:
-```bash
-run_productivity_app.bat
-```
+2. Select Your Mode
+   - Choose between Voice Typing, Avatar Chat, or Screenshot mode
+   - Each mode has its own specialized interface and features
 
-Or run directly with Python:
-```bash
-python productivity_app.py
-```
+## Usage Guide
 
-### Voice Typing
+### Voice Typing Mode
+1. Select "Voice Typing" from the mode dropdown
+2. Press Ctrl+Space to begin recording
+3. Speak naturally - the app will transcribe in real-time
+4. Press Ctrl+Space again to stop
+5. Review and use the transcribed text
 
-1. Select "Voice Typing" mode from the dropdown
-2. Press Ctrl+Space to start recording
-3. Speak clearly into your microphone
-4. Press Ctrl+Space again to stop recording
-5. The transcribed text will appear in the preview window
+### Avatar Chat Mode
+1. Switch to "Avatar Chat" mode
+2. Select your preferred AI avatar
+3. Type or paste your message
+4. Use the chat interface to interact with your AI assistant
 
-### Avatar Chat
-
-1. Select "Avatar Chat" mode
-2. Choose an avatar from the dropdown menu
-3. Type your message or paste transcribed text
-4. Press Enter or click Send to start the conversation
-
-## Project Structure
-
-- `modules/`
-  - `voice_typer.py`: Voice typing implementation
-  - `avatar_chat.py`: Avatar chat interface
-  - `style_config.py`: UI styling configuration
-- `individual_avatars/`: Avatar personality configurations
-- `avatars/`: Avatar system configurations
-- `productivity_app.py`: Main application entry point
+### Screenshot Mode
+1. Select "Screenshot" mode
+2. Use the capture tools to select screen areas
+3. Annotate or mark up your captures as needed
+4. Save or share your screenshots
 
 ## Technical Details
 
-### Voice Typing
-- Uses OpenAI's Whisper model for accurate transcription
-- Real-time audio level monitoring
-- Efficient resource management and cleanup
-- Error handling for audio devices and transcription
+### Dependencies
+- PyQt6: Modern UI framework
+- OpenAI API: Powers AI chat and transcription
+- ElevenLabs: Advanced voice synthesis
+- faster-whisper: Optimized speech recognition
+- Additional requirements listed in `requirements.txt`
 
-### Avatar Chat
-- OpenAI GPT for natural conversations
-- Message history management
-- Customizable avatar personalities
-- Clean separation of UI and logic
+### Project Structure
+```
+echo-assist/
+├── modules/                 # Core functionality modules
+│   ├── voice_typer.py      # Voice transcription
+│   ├── avatar_chat.py      # Chat interface
+│   ├── screenshot.py       # Screen capture
+│   └── style_config.py     # UI styling
+├── avatars/                # Avatar configurations
+├── individual_avatars/     # Custom avatar settings
+└── productivity_app.py     # Main application
+```
 
 ## Troubleshooting
 
-1. **Audio Device Issues**
-   - Ensure your microphone is properly connected
-   - Check Windows sound settings
-   - Try running as administrator
+### Common Issues
+1. Audio Device Not Detected
+   - Check microphone connections
+   - Verify Windows permissions
+   - Select correct input device in settings
 
-2. **Performance Issues**
-   - Ensure GPU drivers are up to date
+2. API Connection Issues
+   - Verify internet connection
+   - Check API keys in `.env` file
+   - Ensure valid API subscription
+
+3. Performance Issues
+   - Update GPU drivers
    - Close resource-intensive applications
-   - Check available system memory
+   - Check system requirements
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests.
+We welcome contributions! Please feel free to submit pull requests, report bugs, or suggest features.
 
 ## License
 
@@ -120,6 +136,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- OpenAI for Whisper and GPT models
+- OpenAI for GPT and Whisper APIs
 - ElevenLabs for voice synthesis
-- PyQt6 for the UI framework
+- PyQt team for the UI framework
+- All contributors and users of Echo Assist
