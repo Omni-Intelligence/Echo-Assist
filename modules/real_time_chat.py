@@ -39,17 +39,32 @@ class AudioInterface(ABC):
 
 class PyAudioInterface(AudioInterface):
     def __init__(self):
-        self.p = pyaudio.PyAudio()
+        self.p = None
         self.input_stream = None
         self.output_stream = None
         self.chunk_size = 2048
         self.sample_rate = 16000
         self.channels = 1
         self.format = pyaudio.paInt16
-        self.input_device = self._get_default_input_device()
-        self.output_device = self._get_default_output_device()
+        self.input_device = None
+        self.output_device = None
         self.is_speaking = False
         self._active = False
+        self._initialize_pyaudio()
+
+    def _initialize_pyaudio(self):
+        """Initialize PyAudio with error handling"""
+        try:
+            if self.p is None:
+                self.p = pyaudio.PyAudio()
+            self.input_device = self._get_default_input_device()
+            self.output_device = self._get_default_output_device()
+        except Exception as e:
+            print(f"Error initializing PyAudio: {e}")
+            if self.p:
+                self.p.terminate()
+                self.p = None
+            raise
 
     def _get_default_input_device(self):
         """Find the default input device index"""
@@ -80,6 +95,10 @@ class PyAudioInterface(AudioInterface):
     def start(self, input_callback: Callable[[bytes], None]):
         if self._active:
             return
+
+        # Ensure PyAudio is initialized
+        if self.p is None:
+            self._initialize_pyaudio()
 
         if self.input_device is None:
             raise ValueError("No valid input device found")
@@ -125,7 +144,8 @@ class PyAudioInterface(AudioInterface):
         
         if self.input_stream:
             try:
-                self.input_stream.stop_stream()
+                if self.input_stream.is_active():
+                    self.input_stream.stop_stream()
                 self.input_stream.close()
             except Exception as e:
                 print(f"Error closing input stream: {e}")
@@ -133,14 +153,18 @@ class PyAudioInterface(AudioInterface):
             
         if self.output_stream:
             try:
-                self.output_stream.stop_stream()
+                if self.output_stream.is_active():
+                    self.output_stream.stop_stream()
                 self.output_stream.close()
             except Exception as e:
                 print(f"Error closing output stream: {e}")
             self.output_stream = None
             
         if self.p:
-            self.p.terminate()
+            try:
+                self.p.terminate()
+            except Exception as e:
+                print(f"Error terminating PyAudio: {e}")
             self.p = None
 
     def output(self, audio: bytes):
@@ -222,10 +246,18 @@ class RealTimeChatWidget(QWidget):
         try:
             if self.audio_interface:
                 self.audio_interface.stop()
+                self.audio_interface = None
+
             self.audio_interface = PyAudioInterface()
+            # Test audio initialization
+            self.audio_interface._initialize_pyaudio()
+            self.toggle_button.setEnabled(True)
+            self.display_message("System", "Audio initialized successfully")
         except Exception as e:
             self.display_message("System", f"Error initializing audio: {str(e)}")
             self.toggle_button.setEnabled(False)
+            if self.audio_interface:
+                self.audio_interface = None
 
     def initUI(self):
         layout = QVBoxLayout(self)
@@ -348,6 +380,7 @@ class RealTimeChatWidget(QWidget):
         # Immediately update UI state
         self.conversation_active = False
         self.toggle_button.setText("Start Conversation")
+        self.toggle_button.setEnabled(False)  # Disable while cleaning up
         self.update_theme()
         
         # Start async cleanup
@@ -361,7 +394,7 @@ class RealTimeChatWidget(QWidget):
                         pass
                     self.ws = None
 
-                # Stop audio immediately
+                # Stop audio interface
                 if self.audio_interface:
                     try:
                         self.audio_interface.stop()
@@ -374,11 +407,12 @@ class RealTimeChatWidget(QWidget):
                         self.conversation_thread.join(timeout=0.5)
                     except:
                         pass
-                    
             except Exception as e:
                 print(f"Cleanup error (non-blocking): {e}")
             finally:
                 self.cleanup_thread = None
+                # Re-enable the button on the main thread
+                self.toggle_button.setEnabled(True)
 
         # Run cleanup in background
         if self.cleanup_thread and self.cleanup_thread.is_alive():

@@ -29,7 +29,8 @@ class ProductivityApp(QMainWindow):
         
         # Initialize PyAudio for device enumeration
         self.p = pyaudio.PyAudio()
-        self.selected_input_device = None
+        # Set default input device to HyperX SoloCast (index 2)
+        self.selected_input_device = 2
         
         self.initUI()
 
@@ -84,19 +85,76 @@ class ProductivityApp(QMainWindow):
             ("💬 Chat Assistant", 0),
             ("🔴 Real-time", 1),
             ("⌨️ Voice Typer", 2),
-            ("📸 Screenshot Analysis", 3),
+            ("📸 Screenshot\n(Coming Soon)", 3),
             ("⚙️ Settings", 4)
         ]
+        
+        # Store buttons for state management
+        self.nav_buttons = []
         
         for text, index in nav_buttons:
             btn = QPushButton(text)
             btn.setCheckable(True)
             btn.setFont(self.theme.SMALL_FONT)
-            btn.clicked.connect(lambda checked, i=index: self.switch_page(i))
-            sidebar_layout.addWidget(btn)
+            # Make button text align left and wrap
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    text-align: left;
+                    padding: 8px;
+                    color: {self.theme.get_color('text')};
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                        stop:0 {self.theme.get_color('secondary')},
+                        stop:1 {self.theme.get_color('secondary_gradient')});
+                    border: 1px solid {self.theme.get_color('border')};
+                    border-radius: 4px;
+                }}
+                QPushButton:hover {{
+                    background: {self.theme.get_color('secondary')};
+                }}
+                QPushButton:checked {{
+                    background: {self.theme.get_color('accent')};
+                }}
+            """)
             
+            if "Coming Soon" in text:
+                # Additional style for coming soon button
+                btn.setStyleSheet(btn.styleSheet().replace("}", """
+                    opacity: 0.7;
+                }"""))
+                # Set minimum height for two lines
+                btn.setMinimumHeight(54)
+            
+            btn.clicked.connect(lambda checked, i=index: self.handle_navigation(i))
+            sidebar_layout.addWidget(btn)
+            self.nav_buttons.append(btn)
+            
+        # Set initial button state
+        self.nav_buttons[0].setChecked(True)
+        
         sidebar_layout.addStretch()
         return sidebar
+
+    def handle_navigation(self, index):
+        """Handle navigation button clicks"""
+        # Uncheck all buttons first
+        for btn in self.nav_buttons:
+            btn.setChecked(False)
+            
+        if index == 3:  # Screenshot Analysis
+            # Show coming soon message
+            QMessageBox.information(
+                self,
+                "Coming Soon",
+                "Screenshot Analysis feature is coming soon! We're working hard to bring you this exciting functionality.",
+                QMessageBox.StandardButton.Ok
+            )
+            # Return to previous page
+            current_index = self.stack.currentIndex()
+            self.nav_buttons[current_index].setChecked(True)
+        else:
+            # Set the clicked button as checked and switch page
+            self.nav_buttons[index].setChecked(True)
+            self.switch_page(index)
 
     def create_content_area(self):
         """Create the main content area with stacked widgets"""
@@ -113,6 +171,8 @@ class ProductivityApp(QMainWindow):
         self.avatar_chat.set_avatar('Joe')  # Set default avatar
         self.real_time_chat = RealTimeChatWidget(self.theme)  # Initialize real-time chat
         self.voice_typer = VoiceTyperWidget(self.theme)
+        # Pass the selected input device to voice typer
+        self.voice_typer.selected_input_device = self.selected_input_device
         self.screenshot_widget = ScreenshotWidget(self.theme)  # New screenshot widget
         self.settings_widget = self.create_settings_widget()  # Add settings widget back
         
@@ -298,18 +358,25 @@ class ProductivityApp(QMainWindow):
         
         # Get available input devices
         input_devices = []
+        hyperx_index = None
         for i in range(self.p.get_device_count()):
             device_info = self.p.get_device_info_by_index(i)
             if device_info['maxInputChannels'] > 0:  # Only add input devices
                 name = device_info['name']
                 input_devices.append((name, i))
                 self.mic_combo.addItem(name, i)  # Store device index in user data
+                # Check if this is the HyperX device
+                if 'HyperX SoloCast' in name and i == 2:
+                    hyperx_index = i
         
-        # Set default device
-        default_index = self.p.get_default_input_device_info()['index']
-        default_device_name = self.p.get_device_info_by_index(default_index)['name']
-        self.mic_combo.setCurrentText(default_device_name)
-        self.selected_input_device = default_index
+        # Set HyperX SoloCast (index 2) as default if available
+        if hyperx_index is not None:
+            hyperx_name = self.p.get_device_info_by_index(hyperx_index)['name']
+            index = self.mic_combo.findText(hyperx_name)
+            if index >= 0:
+                self.mic_combo.setCurrentIndex(index)
+                self.selected_input_device = hyperx_index
+                print(f"Selected HyperX SoloCast microphone (index {hyperx_index})")
         
         self.mic_combo.currentIndexChanged.connect(self.change_microphone)
         settings_layout.addWidget(self.mic_combo)
@@ -320,17 +387,14 @@ class ProductivityApp(QMainWindow):
         return settings_widget
 
     def change_microphone(self, index):
-        """Update the selected input device"""
-        self.selected_input_device = self.mic_combo.currentData()
-        print(f"\nChanging microphone to device index: {self.selected_input_device}")
-        
-        # Update the input device for all audio interfaces
-        if hasattr(self, 'avatar_chat'):
-            self.avatar_chat.update_input_device(self.selected_input_device)
-        if hasattr(self, 'real_time_chat'):
-            self.real_time_chat.update_input_device(self.selected_input_device)
-        if hasattr(self, 'voice_typer'):
-            self.voice_typer.update_input_device(self.selected_input_device)
+        """Update the selected input device when microphone selection changes"""
+        device_index = self.mic_combo.itemData(index)  # Get the stored device index
+        if device_index is not None:
+            self.selected_input_device = device_index
+            # Update the voice typer's input device
+            if hasattr(self, 'voice_typer'):
+                self.voice_typer.selected_input_device = device_index
+            print(f"Changed microphone to index {device_index}")
 
 def exception_hook(exctype, value, tb):
     """Global exception handler to prevent app from crashing silently"""

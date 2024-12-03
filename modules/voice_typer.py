@@ -17,6 +17,7 @@ class VoiceTyperThread(QThread):
     def __init__(self, input_device_index=None):
         super().__init__()
         self.stop_event = Event()
+        # Always use the specified input device index
         self.input_device_index = input_device_index
         try:
             # Use small model for faster processing
@@ -42,19 +43,14 @@ class VoiceTyperThread(QThread):
                 if dev['maxInputChannels'] > 0:
                     print(f"Index {i}: {dev['name']}")
             
-            # Use specified device or fall back to default
-            if self.input_device_index is not None:
-                try:
-                    device_info = audio.get_device_info_by_index(self.input_device_index)
-                    print(f"\nUsing selected audio device: {device_info['name']} (Index: {self.input_device_index})")
-                except Exception as e:
-                    print(f"Error getting selected device info: {e}")
-                    device_info = audio.get_default_input_device_info()
-                    print(f"Falling back to default device: {device_info['name']}")
-                    self.input_device_index = None
-            else:
-                device_info = audio.get_default_input_device_info()
-                print(f"\nUsing default audio device: {device_info['name']}")
+            # Use specified device (index 2 for HyperX SoloCast)
+            try:
+                device_info = audio.get_device_info_by_index(self.input_device_index)
+                print(f"\nUsing audio device: {device_info['name']} (Index: {self.input_device_index})")
+            except Exception as e:
+                print(f"Error getting device info for index {self.input_device_index}: {e}")
+                self.error_occurred.emit(f"Could not access specified microphone (index {self.input_device_index})")
+                return
             
             # Open stream with error handling
             try:
@@ -166,6 +162,28 @@ class VoiceTyperThread(QThread):
                     pass
             self.stop_event.clear()
 
+def find_hyperx_device():
+    """Find the HyperX SoloCast device index"""
+    audio = pyaudio.PyAudio()
+    hyperx_index = None
+    
+    try:
+        for i in range(audio.get_device_count()):
+            dev = audio.get_device_info_by_index(i)
+            if dev['maxInputChannels'] > 0 and 'HyperX SoloCast' in dev['name']:
+                # Prefer devices with higher channel counts or sampling rates
+                if hyperx_index is None or (
+                    dev['maxInputChannels'] > audio.get_device_info_by_index(hyperx_index)['maxInputChannels']
+                ):
+                    hyperx_index = i
+        
+        if hyperx_index is not None:
+            print(f"Found HyperX SoloCast at index {hyperx_index}")
+            return hyperx_index
+        return None
+    finally:
+        audio.terminate()
+
 class VoiceTyperWidget(QWidget):
     def __init__(self, theme):
         super().__init__()
@@ -173,8 +191,9 @@ class VoiceTyperWidget(QWidget):
         self.recorder_thread = None
         self.is_recording = False
         self.max_level_width = 200
-        self.auto_enter = True  # Changed to True for default state
-        self.selected_input_device = None
+        self.auto_enter = True
+        # Default to index 2 (HyperX SoloCast)
+        self.selected_input_device = 2
         self.initUI()
         
         # Initialize keyboard hook with better event handling
@@ -394,27 +413,16 @@ class VoiceTyperWidget(QWidget):
             self.start_recording()
 
     def start_recording(self):
-        """Start recording with the selected input device"""
+        """Start recording audio"""
         if not self.is_recording:
-            try:
-                self.is_recording = True
-                self.status_label.setText("Recording...")
-                
-                # Clean up any existing recorder thread
-                if self.recorder_thread and self.recorder_thread.isRunning():
-                    self.recorder_thread.wait()
-                    self.recorder_thread = None
-                
-                # Create new recorder thread with selected device
-                self.recorder_thread = VoiceTyperThread(input_device_index=self.selected_input_device)
-                self.recorder_thread.text_ready.connect(self.handle_text)
-                self.recorder_thread.error_occurred.connect(self.handle_error)
-                self.recorder_thread.audio_level.connect(self.update_audio_level)
-                self.recorder_thread.transcribing_status.connect(self.update_status)
-                self.recorder_thread.start()
-            except Exception as e:
-                self.handle_error(f"Error starting recording: {str(e)}")
-                self.stop_recording()
+            self.is_recording = True
+            self.status_label.setText("Recording...")
+            self.recorder_thread = VoiceTyperThread(input_device_index=self.selected_input_device)
+            self.recorder_thread.text_ready.connect(self.handle_text)
+            self.recorder_thread.audio_level.connect(self.update_audio_level)
+            self.recorder_thread.error_occurred.connect(self.handle_error)
+            self.recorder_thread.transcribing_status.connect(self.update_status)
+            self.recorder_thread.start()
 
     def stop_recording(self):
         if self.recorder_thread:
@@ -468,9 +476,9 @@ class VoiceTyperWidget(QWidget):
         self.recorder_thread = None
 
     def update_audio_level(self, level):
-        # Normalize level and constrain to max width
-        normalized_level = min(100, level / 100)
-        width = int(normalized_level * self.max_level_width)
+        """Update the audio level indicator"""
+        # Scale the level to fit our indicator width
+        width = min(int((level / 10000) * self.max_level_width), self.max_level_width)
         self.level_indicator.setFixedWidth(width)
 
     def update_status(self, message):
