@@ -4,13 +4,14 @@ from PyQt6.QtGui import QMouseEvent
 
 class CustomTitleBar(QFrame):
     """A custom title bar with window controls and dragging functionality"""
-    def __init__(self, parent=None, title="🎯 Echo Assist"):
+    def __init__(self, parent=None, theme=None):
         super().__init__(parent)
         if not isinstance(parent, QMainWindow):
             raise TypeError("CustomTitleBar parent must be a QMainWindow")
         
         self.parent = parent
-        self.title_text = title
+        self.theme = theme
+        self.title_text = "🎯 Echo Assist"
         self.setObjectName("title-bar")
         self.setFixedHeight(36)
         self.moving = False
@@ -61,19 +62,18 @@ class CustomTitleBar(QFrame):
     def setup_styles(self):
         """Set up the styles for the title bar components"""
         # Get theme colors from parent if available
-        theme = getattr(self.parent, 'theme', None)
-        if theme:
+        if self.theme:
             self.setStyleSheet(f"""
                 #title-bar {{
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 {theme.get_color('secondary')},
-                        stop:1 {theme.get_color('secondary_gradient')});
-                    border-bottom: 1px solid {theme.get_color('border')};
+                        stop:0 {self.theme.get_color('secondary')},
+                        stop:1 {self.theme.get_color('secondary_gradient')});
+                    border-bottom: 1px solid {self.theme.get_color('border')};
                     border-top-left-radius: 10px;
                     border-top-right-radius: 10px;
                 }}
                 #window-title {{
-                    color: {theme.get_color('text')};
+                    color: {self.theme.get_color('text')};
                     font-size: 14px;
                     font-weight: bold;
                     padding: 0;
@@ -87,7 +87,7 @@ class CustomTitleBar(QFrame):
                     font-family: Arial;
                     font-size: 14px;
                     padding: 0;
-                    color: {theme.get_color('text')};
+                    color: {self.theme.get_color('text')};
                 }}
                 QPushButton#minimize-btn:hover,
                 QPushButton#maximize-btn:hover {{

@@ -49,7 +49,7 @@ class ProductivityApp(QMainWindow):
         main_layout.setSpacing(0)
         
         # Add custom title bar
-        self.title_bar = CustomTitleBar(self, "🎯 Echo Assist")
+        self.title_bar = CustomTitleBar(self, self.theme)
         main_layout.addWidget(self.title_bar)
         
         # Create content container
@@ -80,13 +80,10 @@ class ProductivityApp(QMainWindow):
         sidebar_layout.setContentsMargins(8, 8, 8, 8)  # Increased margins
         sidebar_layout.setSpacing(8)  # Increased spacing
         
-        # Create navigation buttons
+        # Create navigation buttons - only Voice Typer and Settings
         nav_buttons = [
-            ("💬 Chat Assistant", 0),
-            ("🔴 Real-time", 1),
-            ("⌨️ Voice Typer", 2),
-            ("📸 Screenshot\n(Coming Soon)", 3),
-            ("⚙️ Settings", 4)
+            ("⌨️ Voice Typer", 0),
+            ("⚙️ Settings", 1)
         ]
         
         # Store buttons for state management
@@ -96,7 +93,6 @@ class ProductivityApp(QMainWindow):
             btn = QPushButton(text)
             btn.setCheckable(True)
             btn.setFont(self.theme.SMALL_FONT)
-            # Make button text align left and wrap
             btn.setStyleSheet(f"""
                 QPushButton {{
                     text-align: left;
@@ -116,18 +112,10 @@ class ProductivityApp(QMainWindow):
                 }}
             """)
             
-            if "Coming Soon" in text:
-                # Additional style for coming soon button
-                btn.setStyleSheet(btn.styleSheet().replace("}", """
-                    opacity: 0.7;
-                }"""))
-                # Set minimum height for two lines
-                btn.setMinimumHeight(54)
-            
             btn.clicked.connect(lambda checked, i=index: self.handle_navigation(i))
             sidebar_layout.addWidget(btn)
             self.nav_buttons.append(btn)
-            
+        
         # Set initial button state
         self.nav_buttons[0].setChecked(True)
         
@@ -139,22 +127,10 @@ class ProductivityApp(QMainWindow):
         # Uncheck all buttons first
         for btn in self.nav_buttons:
             btn.setChecked(False)
-            
-        if index == 3:  # Screenshot Analysis
-            # Show coming soon message
-            QMessageBox.information(
-                self,
-                "Coming Soon",
-                "Screenshot Analysis feature is coming soon! We're working hard to bring you this exciting functionality.",
-                QMessageBox.StandardButton.Ok
-            )
-            # Return to previous page
-            current_index = self.stack.currentIndex()
-            self.nav_buttons[current_index].setChecked(True)
-        else:
-            # Set the clicked button as checked and switch page
-            self.nav_buttons[index].setChecked(True)
-            self.switch_page(index)
+        
+        # Set the clicked button as checked and switch page
+        self.nav_buttons[index].setChecked(True)
+        self.switch_page(index)
 
     def create_content_area(self):
         """Create the main content area with stacked widgets"""
@@ -166,144 +142,19 @@ class ProductivityApp(QMainWindow):
         # Create stacked widget to hold different pages
         self.stack = QStackedWidget()
         
-        # Create and add pages
-        self.avatar_chat = AvatarChatWidget(self.theme, AVATARS)
-        self.avatar_chat.set_avatar('Joe')  # Set default avatar
-        self.real_time_chat = RealTimeChatWidget(self.theme)  # Initialize real-time chat
+        # Only add Voice Typer and Settings
         self.voice_typer = VoiceTyperWidget(self.theme)
-        # Pass the selected input device to voice typer
         self.voice_typer.selected_input_device = self.selected_input_device
-        self.screenshot_widget = ScreenshotWidget(self.theme)  # New screenshot widget
-        self.settings_widget = self.create_settings_widget()  # Add settings widget back
+        self.settings_widget = self.create_settings_widget()
         
-        self.stack.addWidget(self.avatar_chat)
-        self.stack.addWidget(self.real_time_chat)  # Add real-time chat widget to stack
         self.stack.addWidget(self.voice_typer)
-        self.stack.addWidget(self.screenshot_widget)  # Add screenshot widget to stack
-        self.stack.addWidget(self.settings_widget)  # Add settings widget to stack
+        self.stack.addWidget(self.settings_widget)
         
         content_layout.addWidget(self.stack)
         return content_frame
 
     def switch_page(self, index):
         self.stack.setCurrentIndex(index)
-
-    def change_avatar(self, avatar_name):
-        """Update the current avatar and its voice"""
-        if avatar_name in AVATARS:
-            self.avatar_chat.set_avatar(avatar_name)
-
-    def change_theme(self, theme_name):
-        """Update application theme"""
-        self.theme.current_theme = theme_name
-        self.update_styles()
-        
-    def resize_window(self, width):
-        """Resize the window while maintaining aspect ratio"""
-        current_ratio = self.height() / self.width()
-        new_height = int(width * current_ratio)
-        self.resize(width, new_height)
-
-    def reset_to_defaults(self):
-        """Reset all settings to default values"""
-        self.current_size = self.theme.sizes["window"]
-        self.resize(self.current_size)
-        self.theme_combo.setCurrentText("Dark")
-        self.update_styles()
-
-    def toggle_settings(self):
-        """Toggle settings panel visibility"""
-        current_index = self.settings_stack.currentIndex()
-        new_index = 1 if current_index == 0 else 0
-        self.settings_stack.setCurrentIndex(new_index)
-        
-        # Update button text
-        settings_btn = self.findChild(QPushButton, "settings-btn")
-        if settings_btn:
-            settings_btn.setText("⚙ Settings" if new_index == 1 else "⚙ Hide Settings")
-
-    def update_styles(self):
-        """Update styles for all components"""
-        # Update title bar
-        self.title_bar.update_theme()
-        
-        # Update main application styles
-        self.setStyleSheet(f"""
-            QMainWindow {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 {self.theme.get_color('primary')},
-                    stop:1 {self.theme.get_color('primary_gradient')});
-            }}
-            QLabel {{
-                color: {self.theme.get_color('text')};
-                font-size: 13px;
-                padding: 5px;
-                background: transparent;
-            }}
-            #sidebar {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {self.theme.get_color('secondary')},
-                    stop:1 {self.theme.get_color('secondary_gradient')});
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 10px;
-                margin: 10px;
-            }}
-            #content {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {self.theme.get_color('secondary')},
-                    stop:1 {self.theme.get_color('secondary_gradient')});
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 10px;
-            }}
-            QComboBox, QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {self.theme.get_color('secondary')},
-                    stop:1 {self.theme.get_color('secondary_gradient')});
-                color: {self.theme.get_color('text')};
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 6px;
-                padding: 8px;
-                min-height: 20px;
-            }}
-            QComboBox:hover, QPushButton:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {self.theme.get_color('hover')},
-                    stop:1 {self.theme.get_color('secondary_gradient')});
-                border: 1px solid {self.theme.get_color('accent')};
-            }}
-            QPushButton:pressed {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {self.theme.get_color('accent')},
-                    stop:1 {self.theme.get_color('accent_gradient')});
-            }}
-            QPushButton[selected=true] {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {self.theme.get_color('accent')},
-                    stop:1 {self.theme.get_color('accent_gradient')});
-                border: 1px solid {self.theme.get_color('accent')};
-            }}
-            QSlider::groove:horizontal {{
-                background: {self.theme.get_color('secondary_gradient')};
-                height: 8px;
-                border-radius: 4px;
-            }}
-            QSlider::handle:horizontal {{
-                background: {self.theme.get_color('accent')};
-                width: 18px;
-                margin: -5px 0;
-                border-radius: 9px;
-            }}
-            QSlider::handle:horizontal:hover {{
-                background: {self.theme.get_color('accent_gradient')};
-            }}
-            #settings-btn {{
-                text-align: left;
-            }}
-            QFrame#modes-frame {{
-                background: transparent;
-                border: none;
-            }}
-        """)
 
     def create_settings_widget(self):
         """Create the settings panel with window size and theme controls"""
@@ -335,18 +186,6 @@ class ProductivityApp(QMainWindow):
         self.theme_combo.currentTextChanged.connect(self.change_theme)
         self.theme_combo.setFont(self.theme.SMALL_FONT)
         settings_layout.addWidget(self.theme_combo)
-
-        # Avatar selection
-        avatar_label = QLabel("Chat Assistant")
-        avatar_label.setFont(self.theme.SMALL_FONT)
-        settings_layout.addWidget(avatar_label)
-
-        avatar_combo = QComboBox()
-        avatar_combo.addItems(['Joe', 'Ashley', 'Brian'])
-        avatar_combo.setCurrentText('Joe')
-        avatar_combo.currentTextChanged.connect(self.change_avatar)
-        avatar_combo.setFont(self.theme.SMALL_FONT)
-        settings_layout.addWidget(avatar_combo)
 
         # Microphone selection
         mic_label = QLabel("Microphone")
@@ -395,6 +234,86 @@ class ProductivityApp(QMainWindow):
             if hasattr(self, 'voice_typer'):
                 self.voice_typer.selected_input_device = device_index
             print(f"Changed microphone to index {device_index}")
+
+    def update_styles(self):
+        """Update styles for all components"""
+        # Update title bar
+        self.title_bar.update_theme()
+        
+        # Apply styles
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                background: {self.theme.get_color('primary')};
+                color: {self.theme.get_color('text')};
+                padding: 5px;
+                background: transparent;
+            }}
+            #sidebar {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {self.theme.get_color('secondary')},
+                    stop:1 {self.theme.get_color('secondary_gradient')});
+                border: 1px solid {self.theme.get_color('border')};
+                border-radius: 10px;
+                margin: 10px;
+            }}
+            #content {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {self.theme.get_color('secondary')},
+                    stop:1 {self.theme.get_color('secondary_gradient')});
+                border: 1px solid {self.theme.get_color('border')};
+                border-radius: 10px;
+            }}
+            QComboBox, QPushButton {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {self.theme.get_color('secondary')},
+                    stop:1 {self.theme.get_color('secondary_gradient')});
+                border: 1px solid {self.theme.get_color('border')};
+                border-radius: 4px;
+                padding: 5px;
+                color: {self.theme.get_color('text')};
+            }}
+            QComboBox:hover, QPushButton:hover {{
+                background: {self.theme.get_color('secondary')};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+            }}
+            QComboBox::down-arrow {{
+                image: none;
+                border: none;
+            }}
+            QLabel {{
+                color: {self.theme.get_color('text')};
+            }}
+            QSlider::groove:horizontal {{
+                border: 1px solid {self.theme.get_color('border')};
+                height: 8px;
+                background: {self.theme.get_color('secondary')};
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {self.theme.get_color('accent')};
+                border: 1px solid {self.theme.get_color('border')};
+                width: 18px;
+                margin: -2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: {self.theme.get_color('accent_gradient')};
+            }}
+        """)
+
+    def resize_window(self, width):
+        """Resize the window while maintaining aspect ratio"""
+        current_ratio = self.height() / self.width()
+        new_height = int(width * current_ratio)
+        self.resize(width, new_height)
+
+    def change_theme(self, theme_name):
+        """Update application theme"""
+        self.theme.current_theme = theme_name
+        self.update_styles()
 
 def exception_hook(exctype, value, tb):
     """Global exception handler to prevent app from crashing silently"""
