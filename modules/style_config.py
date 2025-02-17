@@ -13,52 +13,13 @@ class ThemeConfig:
         # Default theme
         self.themes = {
             "Dark": {
-                "primary": "#1E1E1E",
-                "primary_gradient": "#2D2D2D",
-                "secondary": "#252526",
-                "secondary_gradient": "#2D2D30",
-                "accent": "#0078D4",
-                "accent_gradient": "#0091FF",
+                "primary": "#2D1F36",
+                "primary_gradient": "#432B52",
+                "secondary": "#FFFFFF",
+                "accent": "#E8E1F0",
                 "text": "#FFFFFF",
-                "text_secondary": "#CCCCCC",
-                "success": "#4CAF50",
-                "error": "#FF3B30",
-                "border": "#333333",
-                "hover": "#2D2D2D",
-                "selected": "#404040",
-                "selected_gradient": "#505050"
-            },
-            "Light": {
-                "primary": "#FFFFFF",
-                "primary_gradient": "#F8F8F8",
-                "secondary": "#F0F0F0",
-                "secondary_gradient": "#E8E8E8",
-                "accent": "#0078D4",
-                "accent_gradient": "#0091FF",
-                "text": "#333333",
-                "text_secondary": "#666666",
-                "success": "#34C759",
-                "error": "#FF3B30",
-                "border": "#D0D0D0",
-                "hover": "#F0F0F0",
-                "selected": "#E8E8E8",
-                "selected_gradient": "#E0E0E0"
-            },
-            "Neutral": {
-                "primary": "#F5F5F5",
-                "primary_gradient": "#EFEFEF",
-                "secondary": "#E8E8E8",
-                "secondary_gradient": "#E0E0E0",
-                "accent": "#2196F3",
-                "accent_gradient": "#42A5F5",
-                "text": "#424242",
-                "text_secondary": "#757575",
-                "success": "#4CAF50",
-                "error": "#F44336",
-                "border": "#CCCCCC",
-                "hover": "#E8E8E8",
-                "selected": "#E0E0E0",
-                "selected_gradient": "#D8D8D8"
+                "text_secondary": "rgba(255, 255, 255, 0.6)",
+                "border": "#222222"
             }
         }
         self.current_theme = "Dark"
@@ -85,10 +46,10 @@ class ThemeConfig:
                 font-size: 14px;
             }}
             QPushButton:hover {{
-                background-color: {self.get_color('accent_gradient')};
+                background-color: {self.get_color('primary_gradient')};
             }}
             QPushButton:pressed {{
-                background-color: {self.get_color('hover')};
+                background-color: {self.get_color('primary')};
             }}
         """
     
@@ -114,7 +75,7 @@ class ThemeConfig:
             QComboBox QAbstractItemView {{
                 background-color: {self.get_color('primary')};
                 color: {self.get_color('text')};
-                selection-background-color: {self.get_color('selected')};
+                selection-background-color: {self.get_color('primary_gradient')};
             }}
         """
     

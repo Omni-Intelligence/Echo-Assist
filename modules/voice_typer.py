@@ -5,7 +5,7 @@ import keyboard
 import faster_whisper
 import torch.cuda
 from threading import Thread, Event
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QTextEdit, QFrame, QCheckBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QTextEdit, QFrame, QCheckBox, QPushButton, QComboBox
 from PyQt6.QtCore import pyqtSignal, QThread, Qt
 
 class VoiceTyperThread(QThread):
@@ -185,18 +185,16 @@ def find_hyperx_device():
         audio.terminate()
 
 class VoiceTyperWidget(QWidget):
-    def __init__(self, theme):
+    def __init__(self, parent, theme):
         super().__init__()
+        self.parent = parent
         self.theme = theme
         self.recorder_thread = None
         self.is_recording = False
-        self.max_level_width = 200
         self.auto_enter = True
-        # Default to index 2 (HyperX SoloCast)
         self.selected_input_device = 2
+        self.settings_visible = False
         self.initUI()
-        
-        # Initialize keyboard hook with better event handling
         self.setup_keyboard_hook()
 
     def setup_keyboard_hook(self):
@@ -223,174 +221,160 @@ class VoiceTyperWidget(QWidget):
     def initUI(self):
         """Initialize the UI components"""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(4)  # Reduced spacing
         
-        # Instructions
-        instructions = QLabel("Press Ctrl+Space to\nstart/stop voice typing")
-        instructions.setFont(self.theme.SMALL_FONT)
-        instructions.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        instructions.setWordWrap(True)
-        instructions.setStyleSheet(f"""
-            QLabel {{
-                color: {self.theme.get_color('text')};
-                background-color: {self.theme.get_color('primary')};
-                padding: 4px;
-                qproperty-alignment: AlignCenter;
-                border-radius: 4px;
+        # Single container for everything
+        main_container = QFrame()
+        main_container.setStyleSheet(f"""
+            QFrame {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {self.theme.get_color('primary_gradient')},
+                    stop:1 {self.theme.get_color('primary')});
+                border-radius: 12px;
             }}
         """)
-        layout.addWidget(instructions)
-
-        # Status label
-        self.status_label = QLabel("Ready")
+        
+        main_layout = QVBoxLayout(main_container)
+        main_layout.setContentsMargins(12, 8, 12, 8)  # Reduced vertical margins
+        main_layout.setSpacing(4)  # Reduced spacing
+        
+        # Top bar with minimal elements
+        top_bar = QHBoxLayout()
+        top_bar.setContentsMargins(0, 0, 0, 0)
+        
+        # Minimal status text
+        self.status_label = QLabel("Ctrl+Space")
         self.status_label.setFont(self.theme.SMALL_FONT)
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setStyleSheet(f"""
-            QLabel {{
+        self.status_label.setStyleSheet(f"color: {self.theme.get_color('text_secondary')};")
+        
+        # Settings button (⚙)
+        settings_button = QPushButton("⚙")
+        settings_button.setFixedSize(16, 16)
+        settings_button.setFont(self.theme.SMALL_FONT)
+        settings_button.setStyleSheet(f"""
+            QPushButton {{
+                color: {self.theme.get_color('text_secondary')};
+                background: transparent;
+                border: none;
+                padding: 0;
+            }}
+            QPushButton:hover {{
                 color: {self.theme.get_color('text')};
-                background-color: {self.theme.get_color('primary')};
-                padding: 6px;
+            }}
+        """)
+        settings_button.clicked.connect(self.toggle_settings)
+        
+        top_bar.addWidget(self.status_label)
+        top_bar.addStretch()
+        top_bar.addWidget(settings_button)
+        
+        main_layout.addLayout(top_bar)
+        
+        # Audio visualization container
+        viz_container = QFrame()
+        viz_container.setFixedHeight(40)  # Reduced height
+        viz_container.setStyleSheet("background: transparent;")
+        
+        viz_layout = QHBoxLayout(viz_container)
+        viz_layout.setContentsMargins(0, 0, 0, 0)
+        viz_layout.setSpacing(4)
+        
+        # Create visualization bars
+        self.viz_bars = []
+        for _ in range(13):
+            bar = QFrame()
+            bar.setFixedWidth(4)
+            bar.setFixedHeight(0)
+            bar.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {self.theme.get_color('accent')};
+                    border-radius: 2px;
+                }}
+            """)
+            viz_layout.addWidget(bar)
+            self.viz_bars.append(bar)
+        
+        main_layout.addWidget(viz_container)
+        
+        # Settings panel (hidden by default)
+        self.settings_panel = QFrame()
+        self.settings_panel.setVisible(False)
+        settings_layout = QVBoxLayout(self.settings_panel)
+        settings_layout.setContentsMargins(0, 4, 0, 0)  # Reduced top margin
+        settings_layout.setSpacing(4)
+        
+        # Microphone selection
+        self.mic_combo = QComboBox()
+        self.mic_combo.setFont(self.theme.SMALL_FONT)
+        self.mic_combo.setStyleSheet(f"""
+            QComboBox {{
+                background: {self.theme.get_color('primary')};
+                color: {self.theme.get_color('text')};
+                border: none;
                 border-radius: 4px;
-            }}
-        """)
-        layout.addWidget(self.status_label)
-
-        # Audio level indicator
-        self.level_indicator = QFrame()
-        self.level_indicator.setFixedHeight(4)
-        self.level_indicator.setFixedWidth(0)
-        self.level_indicator.setStyleSheet(f"""
-            QFrame {{
-                background-color: {self.theme.get_color('accent')};
-                border-radius: 2px;
+                padding: 2px 4px;
             }}
         """)
         
-        # Level indicator container
-        level_container = QFrame()
-        level_container.setFixedHeight(12)
-        level_container.setMinimumWidth(self.max_level_width)
-        level_container.setStyleSheet(f"""
-            QFrame {{
-                background-color: {self.theme.get_color('secondary_gradient')};
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 6px;
-            }}
-        """)
+        # Get available input devices
+        input_devices = []
+        hyperx_index = None
+        for i in range(self.parent.p.get_device_count()):
+            device_info = self.parent.p.get_device_info_by_index(i)
+            if device_info['maxInputChannels'] > 0:
+                name = device_info['name']
+                input_devices.append((name, i))
+                if 'hyperx' in name.lower():
+                    hyperx_index = len(input_devices) - 1
         
-        # Center the level indicator in its container
-        level_layout = QHBoxLayout(level_container)
-        level_layout.setContentsMargins(4, 4, 4, 4)
-        level_layout.addWidget(self.level_indicator)
-        level_layout.addStretch()
+        for name, _ in input_devices:
+            self.mic_combo.addItem(name)
+            
+        if hyperx_index is not None:
+            self.mic_combo.setCurrentIndex(hyperx_index)
         
-        layout.addWidget(level_container)
-
-        # Auto-enter checkbox
-        self.auto_enter_checkbox = QCheckBox("Auto-press Enter")
-        self.auto_enter_checkbox.setFont(self.theme.SMALL_FONT)
-        self.auto_enter_checkbox.setChecked(True)  # Set checkbox to checked by default
-        self.auto_enter_checkbox.setStyleSheet(f"""
+        self.mic_combo.currentIndexChanged.connect(
+            lambda idx: self.parent.change_microphone(input_devices[idx][1])
+        )
+        
+        # Auto-enter toggle
+        auto_enter_check = QCheckBox("Auto-Enter")
+        auto_enter_check.setFont(self.theme.SMALL_FONT)
+        auto_enter_check.setChecked(True)
+        auto_enter_check.setStyleSheet(f"""
             QCheckBox {{
-                color: {self.theme.get_color('text')};
-                padding: 4px;
+                color: {self.theme.get_color('text_secondary')};
             }}
             QCheckBox::indicator {{
-                width: 16px;
-                height: 16px;
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 4px;
+                width: 14px;
+                height: 14px;
+                background: {self.theme.get_color('primary')};
+                border-radius: 3px;
             }}
             QCheckBox::indicator:checked {{
-                background-color: {self.theme.get_color('accent')};
-            }}
-        """)
-        self.auto_enter_checkbox.stateChanged.connect(self.toggle_auto_enter)
-        layout.addWidget(self.auto_enter_checkbox)
-
-        # Text display
-        self.text_display = QTextEdit()
-        self.text_display.setReadOnly(True)
-        self.text_display.setFont(self.theme.SMALL_FONT)
-        self.text_display.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: {self.theme.get_color('primary')};
-                color: {self.theme.get_color('text')};
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 6px;
-                padding: 8px;
-            }}
-            QScrollBar:vertical {{
-                border: none;
-                background: {self.theme.get_color('secondary')};
-                width: 6px;
-                margin: 0px;
-            }}
-            QScrollBar::handle:vertical {{
                 background: {self.theme.get_color('accent')};
-                min-height: 20px;
-                border-radius: 3px;
-            }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-                border: none;
-                background: none;
-            }}
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-                background: none;
             }}
         """)
-        layout.addWidget(self.text_display)
-
-    def update_theme(self):
-        """Update widget styles when theme changes"""
-        self.status_label.setStyleSheet(f"""
-            QLabel {{
-                color: {self.theme.get_color('text')};
-                background-color: {self.theme.get_color('primary')};
-                padding: 6px;
-                border-radius: 4px;
-            }}
-        """)
-
-        self.level_indicator.setStyleSheet(f"""
-            QFrame {{
-                background-color: {self.theme.get_color('accent')};
-                border-radius: 2px;
-            }}
-        """)
+        auto_enter_check.stateChanged.connect(self.toggle_auto_enter)
         
-        self.text_display.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: {self.theme.get_color('primary')};
-                color: {self.theme.get_color('text')};
-                border: 1px solid {self.theme.get_color('border')};
-                border-radius: 6px;
-                padding: 8px;
-            }}
-            QScrollBar:vertical {{
-                border: none;
-                background: {self.theme.get_color('secondary')};
-                width: 6px;
-                margin: 0px;
-            }}
-            QScrollBar::handle:vertical {{
-                background: {self.theme.get_color('accent')};
-                min-height: 20px;
-                border-radius: 3px;
-            }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-                border: none;
-                background: none;
-            }}
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-                background: none;
-            }}
-        """)
-
-    def toggle_auto_enter(self, state):
-        """Toggle the auto-enter feature"""
-        self.auto_enter = bool(state)
+        settings_layout.addWidget(self.mic_combo)
+        settings_layout.addWidget(auto_enter_check)
+        
+        main_layout.addWidget(self.settings_panel)
+        
+        # Main layout
+        layout.addWidget(main_container)
+        
+    def toggle_settings(self):
+        """Toggle the settings panel visibility"""
+        self.settings_visible = not self.settings_visible
+        self.settings_panel.setVisible(self.settings_visible)
+        # Adjust parent window size
+        if self.settings_visible:
+            self.parent.resize(300, 160)
+        else:
+            self.parent.resize(300, 80)
 
     def handle_hotkey(self, event):
         """Handle Ctrl+Space hotkey with better event processing"""
@@ -431,17 +415,13 @@ class VoiceTyperWidget(QWidget):
             self.recorder_thread = None
             self.status_label.setText('Processing... Please wait')
             self.status_label.setStyleSheet(f"""
-                color: {self.theme.get_color('text')};
-                background-color: {self.theme.get_color('primary')};
-                padding: 6px;
-                border-radius: 4px;
+                color: {self.theme.get_color('text_secondary')};
             """)
 
     def handle_text(self, text):
         """Handle transcribed text"""
         try:
             # Preview the text first
-            self.text_display.setPlainText(text)
             print(f"Received transcribed text: {text}")
             
             # Write the text without adding extra spaces
@@ -452,12 +432,7 @@ class VoiceTyperWidget(QWidget):
             
             # Reset the UI
             self.status_label.setText('Ready')
-            self.status_label.setStyleSheet(f"""
-                color: {self.theme.get_color('text')};
-                background-color: {self.theme.get_color('primary')};
-                padding: 6px;
-                border-radius: 4px;
-            """)
+            self.status_label.setStyleSheet(f"color: {self.theme.get_color('text_secondary')};")
         except Exception as e:
             print(f"Error in handle_text: {e}")
             self.status_label.setText("Error processing text")
@@ -476,17 +451,21 @@ class VoiceTyperWidget(QWidget):
         self.recorder_thread = None
 
     def update_audio_level(self, level):
-        """Update the audio level indicator"""
-        # Scale the level to fit our indicator width
-        width = min(int((level / 10000) * self.max_level_width), self.max_level_width)
-        self.level_indicator.setFixedWidth(width)
+        """Update the audio visualization"""
+        max_height = 40  # Taller bars
+        center_idx = len(self.viz_bars) // 2
+        
+        for i, bar in enumerate(self.viz_bars):
+            # Create a smoother wave pattern
+            distance = abs(i - center_idx)
+            height = int(max_height * level * max(0, 1 - (distance * 0.15)))  # Smoother falloff
+            bar.setFixedHeight(height)
 
     def update_status(self, message):
         """Update the status label with processing information"""
         self.status_label.setText(message)
-        self.status_label.setStyleSheet(f"""
-            color: {self.theme.get_color('text')};
-            background-color: {self.theme.get_color('primary')};
-            padding: 6px;
-            border-radius: 4px;
-        """)
+        self.status_label.setStyleSheet(f"color: {self.theme.get_color('text_secondary')};")
+
+    def toggle_auto_enter(self, state):
+        """Toggle the auto-enter feature"""
+        self.auto_enter = bool(state)
