@@ -53,16 +53,47 @@ class ProductivityApp(QMainWindow):
         # Create main widget and layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        
+        # Create outer layout that will contain both close button and main content
+        outer_layout = QVBoxLayout(central_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+        
+        # Create a container for the close button
+        top_bar = QWidget()
+        top_bar.setFixedHeight(20)
+        top_bar_layout = QHBoxLayout(top_bar)
+        top_bar_layout.setContentsMargins(0, 0, 5, 0)
+        top_bar_layout.addStretch()
+        
+        # Add close button
+        close_button = QPushButton("×")
+        close_button.setFixedSize(15, 15)
+        close_button.clicked.connect(self.close)
+        close_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                color: white;
+                font-size: 14px;
+                margin: 0;
+                padding: 0;
+            }
+            QPushButton:hover {
+                color: red;
+            }
+        """)
+        top_bar_layout.addWidget(close_button)
+        
+        # Add top bar to outer layout
+        outer_layout.addWidget(top_bar)
         
         # Create voice typer widget
         self.voice_typer = VoiceTyperWidget(self, self.theme)
         self.voice_typer.selected_input_device = self.selected_input_device
         
-        # Add to layout
-        main_layout.addWidget(self.voice_typer)
+        # Add voice typer to outer layout
+        outer_layout.addWidget(self.voice_typer)
         
         # Set window style
         self.setStyleSheet(f"""
