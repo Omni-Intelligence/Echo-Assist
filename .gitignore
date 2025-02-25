@@ -24,4 +24,6 @@ ENV/
 
 # Application specific
 voice_record.wav
+
+# Audio files
 *.wav
