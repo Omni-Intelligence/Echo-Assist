@@ -1,0 +1,315 @@
+2025-05-19 13:31:44,163 - INFO - Keyboard hook set up successfully
+2025-05-19 13:31:44,170 - INFO - UI initialized successfully
+2025-05-19 13:31:44,170 - INFO - Application initialized successfully
+2025-05-19 13:31:44,425 - INFO - Keyboard hook set up successfully
+2025-05-19 13:32:05,059 - INFO - Changed microphone to index 1
+2025-05-19 13:32:13,977 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:32:13,978 - INFO - Resources cleaned up successfully
+2025-05-19 13:32:43,973 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:32:43,973 - INFO - Resources cleaned up successfully
+2025-05-19 13:33:13,980 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:33:13,980 - INFO - Resources cleaned up successfully
+2025-05-19 13:33:15,597 - INFO - Recording started successfully
+2025-05-19 13:33:20,782 - INFO - Processing audio with duration 00:05.024
+2025-05-19 13:33:20,948 - INFO - VAD filter removed 00:00.000 of audio
+2025-05-19 13:33:21,473 - INFO - Recording stopped successfully
+2025-05-19 13:33:21,509 - INFO - Text transcribed successfully
+2025-05-19 13:33:43,981 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:33:43,981 - INFO - Resources cleaned up successfully
+2025-05-19 13:33:52,473 - INFO - Recording started successfully
+2025-05-19 13:33:59,881 - INFO - Processing audio with duration 00:07.104
+2025-05-19 13:33:59,904 - INFO - VAD filter removed 00:00.000 of audio
+2025-05-19 13:34:00,443 - INFO - Recording stopped successfully
+2025-05-19 13:34:00,490 - INFO - Text transcribed successfully
+2025-05-19 13:34:09,420 - INFO - Recording started successfully
+2025-05-19 13:34:12,372 - INFO - Processing audio with duration 00:02.656
+2025-05-19 13:34:12,379 - INFO - VAD filter removed 00:00.000 of audio
+2025-05-19 13:34:12,849 - INFO - Recording stopped successfully
+2025-05-19 13:34:12,867 - INFO - Text transcribed successfully
+2025-05-19 13:34:13,975 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:34:13,975 - INFO - Resources cleaned up successfully
+2025-05-19 13:34:43,988 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:34:43,988 - INFO - Resources cleaned up successfully
+2025-05-19 13:35:14,002 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:35:14,002 - INFO - Resources cleaned up successfully
+2025-05-19 13:35:43,998 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:35:43,998 - INFO - Resources cleaned up successfully
+2025-05-19 13:35:59,803 - INFO - Recording started successfully
+2025-05-19 13:36:06,083 - INFO - Processing audio with duration 00:05.984
+2025-05-19 13:36:06,099 - INFO - VAD filter removed 00:00.400 of audio
+2025-05-19 13:36:06,608 - INFO - Recording stopped successfully
+2025-05-19 13:36:06,632 - INFO - Text transcribed successfully
+2025-05-19 13:36:13,994 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:36:13,994 - INFO - Resources cleaned up successfully
+2025-05-19 13:36:26,281 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:36:26,281 - INFO - Application closed successfully
+2025-05-19 13:36:44,003 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:36:44,003 - INFO - Resources cleaned up successfully
+2025-05-19 13:37:13,993 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:37:13,993 - INFO - Resources cleaned up successfully
+2025-05-19 13:37:44,003 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:37:44,003 - INFO - Resources cleaned up successfully
+2025-05-19 13:38:11,921 - INFO - Keyboard hook set up successfully
+2025-05-19 13:38:11,923 - INFO - UI initialized successfully
+2025-05-19 13:38:11,923 - INFO - Application initialized successfully
+2025-05-19 13:38:12,157 - INFO - Keyboard hook set up successfully
+2025-05-19 13:38:14,004 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:38:14,004 - INFO - Resources cleaned up successfully
+2025-05-19 13:38:25,890 - INFO - Recording started successfully
+2025-05-19 13:38:27,622 - INFO - Processing audio with duration 00:01.408
+2025-05-19 13:38:27,664 - INFO - VAD filter removed 00:01.408 of audio
+2025-05-19 13:38:27,668 - ERROR - Voice typer error: No speech detected
+2025-05-19 13:38:27,671 - INFO - Recording stopped successfully
+2025-05-19 13:38:32,170 - INFO - Changed microphone to index 1
+2025-05-19 13:38:38,439 - INFO - Recording started successfully
+2025-05-19 13:38:41,870 - INFO - Processing audio with duration 00:03.104
+2025-05-19 13:38:41,881 - INFO - VAD filter removed 00:00.000 of audio
+2025-05-19 13:38:42,383 - INFO - Recording stopped successfully
+2025-05-19 13:38:42,383 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:38:42,383 - INFO - Resources cleaned up successfully
+2025-05-19 13:38:42,418 - INFO - Text transcribed successfully
+2025-05-19 13:38:44,011 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:38:44,011 - INFO - Resources cleaned up successfully
+2025-05-19 13:39:11,743 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:39:11,743 - INFO - Resources cleaned up successfully
+2025-05-19 13:39:14,008 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:39:14,008 - INFO - Resources cleaned up successfully
+2025-05-19 13:39:41,753 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:39:41,753 - INFO - Resources cleaned up successfully
+2025-05-19 13:39:43,783 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:39:43,783 - INFO - Application closed successfully
+2025-05-19 13:39:44,014 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:39:44,014 - INFO - Resources cleaned up successfully
+2025-05-19 13:40:11,755 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:40:11,755 - INFO - Resources cleaned up successfully
+2025-05-19 13:40:14,016 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:40:14,016 - INFO - Resources cleaned up successfully
+2025-05-19 13:40:41,760 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:40:41,762 - INFO - Resources cleaned up successfully
+2025-05-19 13:40:44,030 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:40:44,030 - INFO - Resources cleaned up successfully
+2025-05-19 13:41:11,758 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:41:11,759 - INFO - Resources cleaned up successfully
+2025-05-19 13:41:14,027 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:41:14,027 - INFO - Resources cleaned up successfully
+2025-05-19 13:41:41,755 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:41:41,755 - INFO - Resources cleaned up successfully
+2025-05-19 13:41:44,024 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:41:44,024 - INFO - Resources cleaned up successfully
+2025-05-19 13:42:11,777 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:42:11,778 - INFO - Resources cleaned up successfully
+2025-05-19 13:42:14,020 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:42:14,020 - INFO - Resources cleaned up successfully
+2025-05-19 13:42:41,774 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:42:41,774 - INFO - Resources cleaned up successfully
+2025-05-19 13:42:44,027 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:42:44,027 - INFO - Resources cleaned up successfully
+2025-05-19 13:43:11,788 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:43:11,788 - INFO - Resources cleaned up successfully
+2025-05-19 13:43:14,023 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:43:14,023 - INFO - Resources cleaned up successfully
+2025-05-19 13:43:44,028 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:43:44,028 - INFO - Resources cleaned up successfully
+2025-05-19 13:44:14,041 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:44:14,041 - INFO - Resources cleaned up successfully
+2025-05-19 13:44:44,044 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:44:44,044 - INFO - Resources cleaned up successfully
+2025-05-19 13:45:14,055 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:45:14,055 - INFO - Resources cleaned up successfully
+2025-05-19 13:45:24,383 - INFO - Keyboard hook set up successfully
+2025-05-19 13:45:24,387 - INFO - Application initialized successfully
+2025-05-19 13:45:24,669 - INFO - Keyboard hook set up successfully
+2025-05-19 13:45:44,071 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:45:44,072 - INFO - Resources cleaned up successfully
+2025-05-19 13:45:54,206 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:45:58,699 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:46:14,081 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:46:14,082 - INFO - Resources cleaned up successfully
+2025-05-19 13:46:44,090 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:46:44,090 - INFO - Resources cleaned up successfully
+2025-05-19 13:47:14,105 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:47:14,105 - INFO - Resources cleaned up successfully
+2025-05-19 13:47:44,103 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:47:44,103 - INFO - Resources cleaned up successfully
+2025-05-19 13:48:14,114 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:48:14,114 - INFO - Resources cleaned up successfully
+2025-05-19 13:48:17,905 - INFO - Keyboard hook set up successfully
+2025-05-19 13:48:17,905 - INFO - Application initialized successfully
+2025-05-19 13:48:18,168 - INFO - Keyboard hook set up successfully
+2025-05-19 13:48:44,112 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:48:44,112 - INFO - Resources cleaned up successfully
+2025-05-19 13:49:14,104 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:49:14,105 - INFO - Resources cleaned up successfully
+2025-05-19 13:49:44,104 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:49:44,104 - INFO - Resources cleaned up successfully
+2025-05-19 13:50:14,111 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:50:14,111 - INFO - Resources cleaned up successfully
+2025-05-19 13:50:44,113 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:50:44,114 - INFO - Resources cleaned up successfully
+2025-05-19 13:51:14,106 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:51:14,106 - INFO - Resources cleaned up successfully
+2025-05-19 13:51:44,122 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:51:44,122 - INFO - Resources cleaned up successfully
+2025-05-19 13:52:14,121 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:52:14,121 - INFO - Resources cleaned up successfully
+2025-05-19 13:52:44,125 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:52:44,125 - INFO - Resources cleaned up successfully
+2025-05-19 13:53:14,146 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:53:14,146 - INFO - Resources cleaned up successfully
+2025-05-19 13:53:44,139 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:53:44,139 - INFO - Resources cleaned up successfully
+2025-05-19 13:53:58,356 - ERROR - Fatal error: type object 'QVBoxLayout' has no attribute 'SetDefaultConstraint'
+Traceback (most recent call last):
+  File "c:\Users\OEM\CascadeProjects\Echo-Assist\productivity_app.py", line 233, in <module>
+    window = ProductivityApp()
+             ^^^^^^^^^^^^^^^^^
+  File "c:\Users\OEM\CascadeProjects\Echo-Assist\productivity_app.py", line 47, in __init__
+    self.initUI()
+  File "c:\Users\OEM\CascadeProjects\Echo-Assist\productivity_app.py", line 104, in initUI
+    self.voice_typer = VoiceTyperWidget(self, self.theme)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\OEM\CascadeProjects\Echo-Assist\modules\voice_typer.py", line 199, in __init__
+    self.initUI()
+  File "c:\Users\OEM\CascadeProjects\Echo-Assist\modules\voice_typer.py", line 241, in initUI
+    layout.setSizeConstraint(QVBoxLayout.SetDefaultConstraint)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'QVBoxLayout' has no attribute 'SetDefaultConstraint'
+2025-05-19 13:54:14,140 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:54:14,140 - INFO - Resources cleaned up successfully
+2025-05-19 13:54:44,143 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:54:44,143 - INFO - Resources cleaned up successfully
+2025-05-19 13:55:14,142 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:55:14,142 - INFO - Resources cleaned up successfully
+2025-05-19 13:55:44,142 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:55:44,142 - INFO - Resources cleaned up successfully
+2025-05-19 13:55:48,227 - INFO - Keyboard hook set up successfully
+2025-05-19 13:55:48,236 - INFO - Application initialized successfully
+2025-05-19 13:55:48,491 - INFO - Keyboard hook set up successfully
+2025-05-19 13:56:14,137 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:56:14,137 - INFO - Resources cleaned up successfully
+2025-05-19 13:56:18,075 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:56:44,141 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:56:44,141 - INFO - Resources cleaned up successfully
+2025-05-19 13:56:48,076 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:57:14,137 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:57:14,137 - INFO - Resources cleaned up successfully
+2025-05-19 13:57:18,073 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:57:44,162 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:57:44,162 - INFO - Resources cleaned up successfully
+2025-05-19 13:57:48,084 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:58:14,163 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:58:14,163 - INFO - Resources cleaned up successfully
+2025-05-19 13:58:18,081 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:58:44,148 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:58:44,148 - INFO - Resources cleaned up successfully
+2025-05-19 13:58:48,074 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:59:14,155 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:59:14,155 - INFO - Resources cleaned up successfully
+2025-05-19 13:59:16,917 - INFO - Recording started successfully
+2025-05-19 13:59:18,188 - INFO - Processing audio with duration 00:01.088
+2025-05-19 13:59:18,229 - INFO - VAD filter removed 00:00.592 of audio
+2025-05-19 13:59:18,627 - INFO - Recording stopped successfully
+2025-05-19 13:59:18,627 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:59:18,631 - INFO - Text transcribed successfully
+2025-05-19 13:59:21,949 - INFO - Recording started successfully
+2025-05-19 13:59:26,077 - INFO - Processing audio with duration 00:03.776
+2025-05-19 13:59:26,086 - INFO - VAD filter removed 00:03.776 of audio
+2025-05-19 13:59:26,089 - ERROR - Voice typer error: No speech detected
+2025-05-19 13:59:26,090 - INFO - Recording stopped successfully
+2025-05-19 13:59:36,937 - INFO - Recording started successfully
+2025-05-19 13:59:41,978 - INFO - Processing audio with duration 00:04.736
+2025-05-19 13:59:41,993 - INFO - VAD filter removed 00:03.376 of audio
+2025-05-19 13:59:42,414 - INFO - Recording stopped successfully
+2025-05-19 13:59:42,428 - INFO - Text transcribed successfully
+2025-05-19 13:59:44,163 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:59:44,163 - INFO - Resources cleaned up successfully
+2025-05-19 13:59:46,145 - INFO - Recording started successfully
+2025-05-19 13:59:48,214 - INFO - Processing audio with duration 00:01.760
+2025-05-19 13:59:48,219 - INFO - VAD filter removed 00:01.104 of audio
+2025-05-19 13:59:48,577 - INFO - Recording stopped successfully
+2025-05-19 13:59:48,577 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 13:59:48,585 - INFO - Text transcribed successfully
+2025-05-19 13:59:58,318 - INFO - Recording started successfully
+2025-05-19 14:00:10,564 - INFO - Processing audio with duration 00:11.904
+2025-05-19 14:00:10,586 - INFO - VAD filter removed 00:11.904 of audio
+2025-05-19 14:00:10,595 - INFO - Recording stopped successfully
+2025-05-19 14:00:10,597 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:00:10,605 - ERROR - Voice typer error: No speech detected
+2025-05-19 14:00:14,164 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:00:14,164 - INFO - Resources cleaned up successfully
+2025-05-19 14:00:44,175 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:00:44,175 - INFO - Resources cleaned up successfully
+2025-05-19 14:01:14,177 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:01:14,177 - INFO - Resources cleaned up successfully
+2025-05-19 14:01:44,174 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:01:44,174 - INFO - Resources cleaned up successfully
+2025-05-19 14:02:14,170 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:02:14,170 - INFO - Resources cleaned up successfully
+2025-05-19 14:02:44,164 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:02:44,164 - INFO - Resources cleaned up successfully
+2025-05-19 14:03:14,166 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:03:14,166 - INFO - Resources cleaned up successfully
+2025-05-19 14:03:44,178 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:03:44,178 - INFO - Resources cleaned up successfully
+2025-05-19 14:04:14,175 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:04:14,175 - INFO - Resources cleaned up successfully
+2025-05-19 14:04:44,187 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:04:44,187 - INFO - Resources cleaned up successfully
+2025-05-19 14:05:14,184 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:05:14,184 - INFO - Resources cleaned up successfully
+2025-05-19 14:05:44,196 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:05:44,196 - INFO - Resources cleaned up successfully
+2025-05-19 14:06:14,208 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:06:14,208 - INFO - Resources cleaned up successfully
+2025-05-19 14:06:44,205 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:06:44,205 - INFO - Resources cleaned up successfully
+2025-05-19 14:07:14,203 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:07:14,203 - INFO - Resources cleaned up successfully
+2025-05-19 14:07:44,199 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:07:44,200 - INFO - Resources cleaned up successfully
+2025-05-19 14:08:14,204 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:08:14,204 - INFO - Resources cleaned up successfully
+2025-05-19 14:08:44,208 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:08:44,209 - INFO - Resources cleaned up successfully
+2025-05-19 14:09:14,206 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:09:14,206 - INFO - Resources cleaned up successfully
+2025-05-19 14:09:44,197 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:09:44,197 - INFO - Resources cleaned up successfully
+2025-05-19 14:10:14,205 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:10:14,205 - INFO - Resources cleaned up successfully
+2025-05-19 14:10:44,215 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:10:44,215 - INFO - Resources cleaned up successfully
+2025-05-19 14:11:14,226 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:11:14,226 - INFO - Resources cleaned up successfully
+2025-05-19 14:11:44,222 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:11:44,222 - INFO - Resources cleaned up successfully
+2025-05-19 14:12:14,214 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:12:14,215 - INFO - Resources cleaned up successfully
+2025-05-19 14:12:44,212 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:12:44,212 - INFO - Resources cleaned up successfully
+2025-05-19 14:13:14,227 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:13:14,227 - INFO - Resources cleaned up successfully
+2025-05-19 14:13:44,217 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:13:44,217 - INFO - Resources cleaned up successfully
+2025-05-19 14:14:14,225 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:14:14,225 - INFO - Resources cleaned up successfully
+2025-05-19 14:14:44,223 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:14:44,224 - INFO - Resources cleaned up successfully
+2025-05-19 14:15:14,232 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:15:14,232 - INFO - Resources cleaned up successfully
+2025-05-19 14:15:44,233 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:15:44,233 - INFO - Resources cleaned up successfully
+2025-05-19 14:16:14,259 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:16:14,259 - INFO - Resources cleaned up successfully
+2025-05-19 14:16:44,258 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:16:44,258 - INFO - Resources cleaned up successfully
+2025-05-19 14:17:14,270 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:17:14,270 - INFO - Resources cleaned up successfully
+2025-05-19 14:17:44,263 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:17:44,263 - INFO - Resources cleaned up successfully
+2025-05-19 14:18:14,266 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:18:14,266 - INFO - Resources cleaned up successfully
+2025-05-19 14:18:44,273 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:18:44,273 - INFO - Resources cleaned up successfully
+2025-05-19 14:19:14,272 - INFO - Voice typer resources cleaned up successfully
+2025-05-19 14:19:14,272 - INFO - Resources cleaned up successfully
