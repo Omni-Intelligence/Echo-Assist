@@ -1,6 +1,8 @@
 import sys
+import os
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtGui import QIcon
 from modules.voice_typer import VoiceTyperWidget
 from modules.style_config import ThemeConfig
 
@@ -11,6 +13,11 @@ class ProductivityApp(QMainWindow):
         self.setFixedSize(300, 200)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        # Set window icon
+        icon_path = os.path.join(os.path.dirname(__file__), 'echo_assist.ico')
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
         # Initialize theme
         self.theme = ThemeConfig()
