@@ -152,60 +152,70 @@ class VoiceTyperWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(self.theme.PADDING, self.theme.PADDING, self.theme.PADDING, self.theme.PADDING)
         layout.setSpacing(self.theme.SPACING)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         main_container = QFrame()
+        main_container.setObjectName("mainContainer")
         main_container.setStyleSheet(styles['main_container'])
-        main_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        main_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         main_layout = QVBoxLayout(main_container)
         main_layout.setContentsMargins(self.theme.PADDING, self.theme.PADDING, self.theme.PADDING, self.theme.PADDING)
         main_layout.setSpacing(self.theme.SPACING)
 
-        # Top bar
-        top_bar = QHBoxLayout()
-        top_bar.setContentsMargins(0, 0, 0, 0)
+        # Single compact row: [●] [status] [───viz───] [⚙] [✕]
+        bar = QHBoxLayout()
+        bar.setContentsMargins(0, 0, 0, 0)
+        bar.setSpacing(self.theme.SPACING)
+
+        self.record_button = QPushButton("●")
+        self.record_button.setFont(self.theme.SMALL_FONT)
+        self.record_button.setStyleSheet(styles['button_record'])
+        self.record_button.setFixedSize(20, 20)
+        self.record_button.setToolTip("Start/Stop Recording (Ctrl+Space)")
+        self.record_button.clicked.connect(self.toggle_recording)
+        bar.addWidget(self.record_button)
+
         self.status_label = QLabel("Ctrl+Space")
         self.status_label.setFont(self.theme.SMALL_FONT)
         self.status_label.setStyleSheet(styles['label'])
+        bar.addWidget(self.status_label)
 
-        settings_button = QPushButton("⚙")
-        settings_button.setFont(self.theme.SMALL_FONT)
-        settings_button.setStyleSheet(styles['button_icon'])
-        settings_button.clicked.connect(self.toggle_settings)
-
-        close_button = QPushButton("✕")
-        close_button.setFont(self.theme.SMALL_FONT)
-        close_button.setStyleSheet(styles['button_close'])
-        close_button.clicked.connect(self.close_app)
-
-        top_bar.addWidget(self.status_label)
-        top_bar.addStretch()
-        top_bar.addWidget(settings_button)
-        top_bar.addWidget(close_button)
-        main_layout.addLayout(top_bar)
-
-        # Record button
-        self.record_button = QPushButton("Start/Stop Recording")
-        self.record_button.setFont(self.theme.SMALL_FONT)
-        self.record_button.setStyleSheet(styles['button'])
-        self.record_button.clicked.connect(self.toggle_recording)
-        main_layout.addWidget(self.record_button)
-
-        # Audio visualization
+        # Horizontal level meter — width grows with audio level
         viz_container = QFrame()
         viz_container.setStyleSheet("background: transparent;")
-        viz_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        viz_container.setFixedHeight(6)
+        viz_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         viz_layout = QHBoxLayout(viz_container)
         viz_layout.setContentsMargins(0, 0, 0, 0)
         viz_layout.setSpacing(0)
         self.viz_bar = QFrame()
         self.viz_bar.setStyleSheet(styles['viz_bar'])
-        self.viz_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.viz_bar.setFixedWidth(0)
+        self.viz_bar.setFixedHeight(6)
         viz_layout.addWidget(self.viz_bar)
-        main_layout.addWidget(viz_container)
+        viz_layout.addStretch()
+        self.viz_container = viz_container
+        bar.addWidget(viz_container, 1)
+
+        settings_button = QPushButton("⚙")
+        settings_button.setFont(self.theme.SMALL_FONT)
+        settings_button.setStyleSheet(styles['button_icon'])
+        settings_button.setFixedSize(20, 20)
+        settings_button.clicked.connect(self.toggle_settings)
+        bar.addWidget(settings_button)
+
+        close_button = QPushButton("✕")
+        close_button.setFont(self.theme.SMALL_FONT)
+        close_button.setStyleSheet(styles['button_close'])
+        close_button.setFixedSize(20, 20)
+        close_button.clicked.connect(self.close_app)
+        bar.addWidget(close_button)
+
+        main_layout.addLayout(bar)
 
         # Settings panel
         self.settings_panel = QFrame()
+        self.settings_panel.setStyleSheet("background: transparent;")
         self.settings_panel.setVisible(False)
         settings_layout = QVBoxLayout(self.settings_panel)
         settings_layout.setContentsMargins(0, self.theme.SPACING, 0, 0)
@@ -230,11 +240,17 @@ class VoiceTyperWidget(QWidget):
             audio.terminate()
         for name, _ in input_devices:
             self.mic_combo.addItem(name)
-        if hyperx_index is not None:
-            self.mic_combo.setCurrentIndex(hyperx_index)
+        # Connect signal BEFORE setCurrentIndex so auto-detected mic actually
+        # updates selected_input_device (otherwise it stays at hardcoded default).
         self.mic_combo.currentIndexChanged.connect(
             lambda idx: self.change_microphone(input_devices[idx][1])
         )
+        if hyperx_index is not None:
+            self.selected_input_device = input_devices[hyperx_index][1]
+            self.mic_combo.setCurrentIndex(hyperx_index)
+        elif input_devices:
+            self.selected_input_device = input_devices[0][1]
+            self.mic_combo.setCurrentIndex(0)
 
         auto_enter_check = QCheckBox("Auto-Enter")
         auto_enter_check.setFont(self.theme.SMALL_FONT)
@@ -248,6 +264,8 @@ class VoiceTyperWidget(QWidget):
 
     def toggle_settings(self):
         self.settings_panel.setVisible(not self.settings_panel.isVisible())
+        if self.parent:
+            self.parent.adjustSize()
 
     def toggle_recording(self):
         if not self.is_recording:
@@ -264,6 +282,8 @@ class VoiceTyperWidget(QWidget):
     def start_recording(self):
         if not self.is_recording:
             self.is_recording = True
+            styles = self.theme.get_styles()
+            self.record_button.setStyleSheet(styles['button_record_active'])
             self.recorder_thread = VoiceTyperThread(self.selected_input_device)
             self.recorder_thread.text_ready.connect(self.handle_text)
             self.recorder_thread.error_occurred.connect(self.handle_error)
@@ -276,6 +296,9 @@ class VoiceTyperWidget(QWidget):
             self.recorder_thread.stop_event.set()
             self.recorder_thread.wait()
             self.is_recording = False
+            styles = self.theme.get_styles()
+            self.record_button.setStyleSheet(styles['button_record'])
+            self.viz_bar.setFixedWidth(0)
 
     def handle_text(self, text):
         if text:
@@ -297,9 +320,9 @@ class VoiceTyperWidget(QWidget):
         self.recorder_thread = None
 
     def update_audio_level(self, level):
-        max_height = 40
-        height = int(max_height * min(1.0, level / 3000))
-        self.viz_bar.setFixedHeight(height)
+        max_width = self.viz_container.width()
+        width = int(max_width * min(1.0, level / 3000))
+        self.viz_bar.setFixedWidth(width)
 
     def update_status(self, message):
         self.status_label.setText(message)

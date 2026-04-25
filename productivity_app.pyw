@@ -10,7 +10,7 @@ class ProductivityApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Voice Typer')
-        self.setFixedSize(300, 200)
+        self.setFixedWidth(260)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
